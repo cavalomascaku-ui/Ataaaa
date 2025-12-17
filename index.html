@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rabo Motel - v6.0 Perfect</title>
+    <title>Rabo Hotel - v15.1 Emergency Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -11,7 +11,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700;900&display=swap');
 
         body {
-            margin: 0; overflow: hidden; background-color: #0f0f1a;
+            margin: 0; overflow: hidden; background-color: #050510;
             font-family: 'Roboto', sans-serif; touch-action: none; user-select: none;
         }
         canvas { display: block; image-rendering: pixelated; }
@@ -24,26 +24,44 @@
 
         /* Top HUD */
         .hud-top {
-            padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); pointer-events: auto;
+            padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: auto;
             display: flex; justify-content: space-between; align-items: flex-start;
         }
         .logo { 
-            font-family: 'Press Start 2P', cursive; color: #00ffff; 
-            text-shadow: 2px 2px 0px #000033, -1px -1px 0px #ff00ff; 
+            font-family: 'Press Start 2P', cursive; color: #ff0055; 
+            text-shadow: 2px 2px 0px #330011, -1px -1px 0px #ffaad4; 
             font-size: 12px; line-height: 1.5; transform: skew(-5deg);
         }
         
         .btn-style {
-            background: linear-gradient(135deg, #4400cc, #220066); border: 2px solid #8800ff; color: white;
+            background: linear-gradient(135deg, #cc0044, #660022); border: 2px solid #ff0066; color: white;
             padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 10px; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(50,0,200,0.4); text-transform: uppercase; display: flex; align-items: center; gap: 5px;
+            box-shadow: 0 4px 10px rgba(200,0,50,0.4); text-transform: uppercase; display: flex; align-items: center; gap: 5px;
+            transition: transform 0.1s;
         }
         .btn-style:active { transform: scale(0.95); }
+        .btn-music { border-color: #00ff00; color: #ccffcc; background: linear-gradient(135deg, #004400, #002200); }
 
-        /* Context Actions (Botões Flutuantes) */
+        /* Invite Modal */
+        #invite-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(20, 0, 10, 0.95); border: 2px solid #ff0055; padding: 20px;
+            border-radius: 15px; text-align: center; display: none; z-index: 2000;
+            box-shadow: 0 0 50px rgba(255,0,85,0.6); animation: bounceIn 0.3s;
+            pointer-events: auto; width: 280px;
+        }
+        .modal-title { color: #ff0055; font-weight: 900; margin-bottom: 10px; font-size: 14px; }
+        .modal-text { color: #fff; margin-bottom: 20px; font-size: 12px; }
+        .modal-btn { 
+            padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; display: inline-block; margin: 5px;
+        }
+        .btn-accept { background: #00ff00; color: #000; }
+        .btn-deny { background: #ff0000; color: #fff; }
+
+        /* Context Actions */
         .ctx-container {
             position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 10px; pointer-events: auto;
+            display: flex; gap: 10px; pointer-events: auto; z-index: 50;
         }
         .ctx-btn {
             background: rgba(0,0,0,0.9); border: 2px solid #fff; color: white; padding: 10px 20px;
@@ -52,47 +70,64 @@
             animation: bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-transform: uppercase;
         }
         .ctx-btn:hover { transform: scale(1.1); }
-        .ctx-btn.drink { border-color: #00ffff; color: #00ffff; }
-        .ctx-btn.dance { border-color: #ff00ff; color: #ff00ff; }
-        @keyframes bounceIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .ctx-btn.red { border-color: #ff0044; color: #ff0044; }
+        .ctx-btn.blue { border-color: #00ffff; color: #00ffff; }
 
-        /* Interact Menu */
-        #interact-menu {
-            position: absolute; background: rgba(10, 10, 25, 0.95); border: 2px solid #00ffff;
-            padding: 8px; border-radius: 12px; display: none; flex-direction: column; gap: 5px;
-            pointer-events: auto; z-index: 100; box-shadow: 0 0 20px rgba(0,255,255,0.3);
-            animation: popIn 0.2s;
+        @keyframes bounceIn { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
+
+        /* Menus */
+        #interact-menu, #emote-menu, #music-menu {
+            position: absolute; background: rgba(20, 10, 20, 0.98); border: 2px solid #ff0055;
+            padding: 10px; border-radius: 12px; display: none; flex-direction: column; gap: 8px;
+            pointer-events: auto; z-index: 100; box-shadow: 0 0 30px rgba(255,0,85,0.4);
         }
+        
+        #emote-menu { 
+            flex-direction: row; flex-wrap: wrap; width: 220px; bottom: 85px; left: 50%; 
+            transform: translateX(-50%); display: none; justify-content: center;
+        }
+        #emote-menu.visible { display: flex; }
+        
+        #music-menu {
+            top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px;
+        }
+
         .int-btn {
-            background: #220044; color: #cc99ff; padding: 8px 12px; border-radius: 6px; 
+            background: #440022; color: #ffccdd; padding: 10px 12px; border-radius: 6px; 
             cursor: pointer; font-size: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px;
-            transition: 0.2s; border: 1px solid #440066;
+            transition: 0.2s; border: 1px solid #660033; justify-content: center;
         }
-        .int-btn:hover { background: #440088; color: white; border-color: #8800ff; }
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .int-btn:hover { background: #880044; color: white; border-color: #ff0066; }
+        
+        .emote-opt { font-size: 24px; cursor: pointer; padding: 5px; transition: transform 0.2s; }
+        .emote-opt:hover { transform: scale(1.3); }
 
         /* Custom Panel */
         #custom-panel {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(15, 15, 30, 0.98); border: 2px solid #8800ff; padding: 20px; border-radius: 16px;
+            background: rgba(15, 15, 30, 0.98); border: 2px solid #ff0066; padding: 20px; border-radius: 16px;
             pointer-events: auto; display: none; width: 340px; max-height: 85vh; overflow-y: auto;
-            box-shadow: 0 0 50px rgba(100,0,255,0.3); backdrop-filter: blur(15px);
+            box-shadow: 0 0 50px rgba(255,0,100,0.3); backdrop-filter: blur(15px); z-index: 1000;
         }
         #custom-panel.open { display: block; }
 
-        .section-header { color: #cc88ff; font-size: 10px; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #442266; padding-bottom: 4px; letter-spacing: 1px; }
+        .section-header { color: #ff88aa; font-size: 10px; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #662244; padding-bottom: 4px; letter-spacing: 1px; margin-top: 15px; }
         .skin-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
-        .skin-opt { width: 100%; aspect-ratio: 1; border-radius: 50%; border: 3px solid #332244; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
-        .skin-opt:hover { transform: scale(1.1); border-color: #fff; }
-        .skin-opt.selected { border-color: #00ffff; box-shadow: 0 0 15px #00ffff; }
+        .skin-opt { width: 100%; aspect-ratio: 1; border-radius: 50%; border: 3px solid #442233; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .skin-opt.selected { border-color: #ff0066; box-shadow: 0 0 15px #ff0066; }
 
         .acc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
         .acc-btn { 
-            background: #221133; border: 1px solid #442255; color: #ccaaff; padding: 8px; 
+            background: #331122; border: 1px solid #552233; color: #ffccdd; padding: 8px; 
             border-radius: 8px; font-size: 10px; text-align: center; cursor: pointer; transition: 0.2s;
         }
-        .acc-btn:hover { background: #442266; color: white; }
-        .acc-btn.selected { background: #8800ff; color: white; border-color: white; box-shadow: 0 0 10px #8800ff; }
+        .acc-btn.selected { background: #ff0055; color: white; border-color: white; box-shadow: 0 0 10px #ff0055; }
+
+        .input-dark {
+            width: 100%; background: #1a0a10; border: 1px solid #663344; color: white; padding: 10px;
+            border-radius: 8px; font-family: 'Roboto', sans-serif; font-weight: bold; outline: none; margin-bottom: 10px;
+        }
+        .input-dark:focus { border-color: #ff0066; }
 
         /* Chat & Bottom */
         .hud-bottom {
@@ -103,46 +138,92 @@
             flex: 1; background: rgba(255,255,255,0.1); border: 1px solid #444; border-radius: 30px; padding: 12px 20px;
             color: white; font-weight: bold; outline: none; backdrop-filter: blur(5px);
         }
-        #chat-input:focus { background: rgba(0,0,0,0.8); border-color: #00ffff; }
-        #btn-send { background: #00ffff; color: #000; border: none; padding: 12px; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-weight: bold; box-shadow: 0 0 10px #00ffff; }
+        #chat-input:focus { background: rgba(0,0,0,0.8); border-color: #ff0066; }
+        
+        .icon-btn { background: #222; color: #fff; border: 1px solid #444; padding: 12px; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+        .icon-btn:hover { background: #444; border-color: #fff; }
+        #btn-send { background: #ff0066; color: #fff; border: none; font-weight: bold; box-shadow: 0 0 10px #ff0066; }
         
         /* Toast */
         #toast {
-            position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.9); border: 1px solid #00ffff; color: #00ffff;
+            position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); border: 1px solid #ff0066; color: #ffaad4;
             padding: 12px 30px; border-radius: 50px; font-weight: 900; font-size: 12px;
             display: none; animation: slideDown 0.3s; z-index: 50; text-align: center;
         }
         @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
-        /* Drunk Overlay */
-        #drunk-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-            background: radial-gradient(circle, transparent 50%, rgba(100,0,255,0.2) 100%);
-            opacity: 0; transition: opacity 1s; mix-blend-mode: color-dodge; z-index: 5;
+        /* Audio Indicator */
+        #audio-status {
+            position: fixed; top: 60px; right: 15px; background: rgba(0,0,0,0.7); 
+            padding: 5px 10px; border-radius: 5px; color: #0f0; font-size: 10px; display: none; z-index: 99;
+        }
+
+        #youtube-player { position: absolute; top: -9999px; left: -9999px; opacity: 0; pointer-events: none; }
+        
+        .room-indicator {
+            position: absolute; top: 60px; left: 15px; background: rgba(0,0,0,0.7);
+            padding: 5px 10px; border-radius: 5px; color: #ff0066; font-weight: bold; font-size: 10px;
+            border: 1px solid #ff0066; display: none;
         }
     </style>
 </head>
 <body>
-
-    <div id="drunk-overlay"></div>
+    <div id="youtube-player"></div>
 
     <div id="ui-layer">
         <div class="hud-top">
             <div>
-                <div class="logo">🍑 RABO MOTEL <span style="font-size:8px; color:#fff;">V6</span></div>
-                <div style="font-size:9px; color:#88aaff; margin-top:2px;">CYBER LOUNGE</div>
+                <div class="logo">🏩 RABO MOTEL <span style="font-size:8px; color:#fff;">V15.1</span></div>
+                <div style="font-size:9px; color:#ff88aa; margin-top:2px;">STABLE FIX</div>
             </div>
-            <button id="btn-custom" class="btn-style"><i class="fas fa-gem"></i> LOOK</button>
+            <div style="display:flex; gap:10px;">
+                <button id="btn-audio-init" class="btn-style btn-music"><i class="fas fa-volume-up"></i> SOM</button>
+                <button id="btn-dj" class="btn-style"><i class="fas fa-headphones"></i> DJ</button>
+                <button id="btn-custom" class="btn-style"><i class="fas fa-user-edit"></i> LOOK</button>
+            </div>
         </div>
 
         <div id="toast"></div>
+        <div id="room-indicator" class="room-indicator">SUÍTE PRIVADA</div>
+        <div id="audio-status"><i class="fas fa-music"></i> Tocando...</div>
         
-        <!-- Context Actions (Botoes de Beber/Dançar) -->
+        <div id="invite-modal">
+            <div class="modal-title">🔥 CONVITE 🔥</div>
+            <div id="invite-text" class="modal-text">Alguém quer te levar pro quarto...</div>
+            <div class="modal-btn btn-accept" id="btn-accept-invite">VAMOS! (ACEITAR)</div>
+            <div class="modal-btn btn-deny" id="btn-deny-invite">TÔ FORA (RECUSAR)</div>
+        </div>
+
         <div class="ctx-container" id="ctx-ui"></div>
 
-        <!-- Menu de Interação (Clicar em player) -->
+        <!-- Emote Menu -->
+        <div id="emote-menu">
+            <div class="emote-opt" onclick="sendEmote('❤️')">❤️</div>
+            <div class="emote-opt" onclick="sendEmote('🔥')">🔥</div>
+            <div class="emote-opt" onclick="sendEmote('💋')">💋</div>
+            <div class="emote-opt" onclick="sendEmote('😈')">😈</div>
+            <div class="emote-opt" onclick="sendEmote('🍆')">🍆</div>
+            <div class="emote-opt" onclick="sendEmote('🍑')">🍑</div>
+            <div class="emote-opt" onclick="sendEmote('💦')">💦</div>
+            <div class="emote-opt" onclick="sendEmote('🍺')">🍺</div>
+            <div class="emote-opt" onclick="sendEmote('💊')">💊</div>
+            <div class="emote-opt" onclick="sendEmote('🚬')">🚬</div>
+        </div>
+
+        <!-- Music Menu -->
+        <div id="music-menu">
+            <div class="section-header" style="margin-top:0;">COLOCAR MÚSICA (YOUTUBE)</div>
+            <input type="text" id="music-input" class="input-dark" placeholder="Cole link do YouTube...">
+            <div class="int-btn" onclick="startDJ()">TOCAR</div>
+            <div class="int-btn" style="background:#441111; margin-top:5px;" onclick="stopDJ()">PARAR</div>
+            <div class="int-btn" style="background:transparent; border:none; margin-top:5px;" onclick="document.getElementById('music-menu').style.display='none'">CANCELAR</div>
+        </div>
+
+        <!-- Menu de Interação -->
         <div id="interact-menu">
+            <div class="int-btn" style="border: 2px solid #ff0066; background: #330011; color: #fff;" onclick="sendInvite()">💌 CONVIDAR P/ QUARTO</div>
+            <div class="int-btn" onclick="triggerInteract('carry')">💪 CARREGAR</div>
             <div class="int-btn" onclick="triggerInteract('kiss')">💋 BEIJAR</div>
             <div class="int-btn" onclick="triggerInteract('sarrar')">🔥 SARRAR</div>
             <div class="int-btn" onclick="triggerInteract('slap')">👋 TAPA</div>
@@ -150,20 +231,24 @@
         </div>
 
         <div class="hud-bottom">
+            <button id="btn-emote" class="icon-btn"><i class="fas fa-smile"></i></button>
             <input type="text" id="chat-input" placeholder="Conversar..." maxlength="50" autocomplete="off">
-            <button id="btn-send"><i class="fas fa-paper-plane"></i></button>
+            <button id="btn-send" class="icon-btn"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
-    <!-- PAINEL -->
+    <!-- PAINEL LOOK -->
     <div id="custom-panel">
+        <div class="section-header" style="margin-top:0;">SEU NOME</div>
+        <input type="text" id="input-name" class="input-dark" placeholder="Seu nick..." maxlength="12">
+
         <div class="section-header">PELE</div>
         <div class="skin-grid" id="skin-grid"></div>
         
         <div class="section-header">ROUPAS & EXTRAS</div>
         <div class="acc-grid" id="acc-grid"></div>
 
-        <button id="btn-save" class="w-full mt-6 bg-purple-600 text-white font-bold p-3 rounded-xl hover:bg-purple-500 shadow-lg transition">PRONTO</button>
+        <button id="btn-save" class="w-full mt-6 bg-purple-600 text-white font-bold p-3 rounded-xl hover:bg-purple-500 shadow-lg transition">SALVAR</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -174,7 +259,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyChPRJcA-qNZBVM6ooEcjUbB79XRW1XNAM",
             authDomain: "onyxchat-8ad6f.firebaseapp.com",
@@ -184,33 +268,36 @@
             appId: "1:896434555696:web:dcc626cc34eef3a0d816f5",
             measurementId: "G-GR1SJMYQZ2"
         };
-        const APP_ID = "rabo-motel-v6-perfect"; 
-        const PLAYERS_COLLECTION = "players_v6";
+        const APP_ID = "rabo-hotel-v15-invite"; 
+        const PLAYERS_COLLECTION = "players_v15_1"; // New collection to force fresh data
+        const WORLD_COLLECTION = "world_v15_1";
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- CONSTANTES ---
         const TILE_W = 64;
         const TILE_H = 32;
-        const MAP_SIZE = 16; 
+        const MAP_SIZE = 32; 
 
-        // Tiles
-        const T = { FLOOR: 0, WALL: 1, DANCE: 2, BAR: 3, VIP: 4, DJ: 5, POOL: 6 };
-
-        // CORES (CYBER LOUNGE - Azul/Roxo/Cyan)
-        const C = {
-            floor: '#1a1a2e', floorAlt: '#232342', // Dark Blue
-            wallTop: '#333366', wallSide: '#111133',
-            danceA: '#8800ff', danceB: '#440088',
-            barTop: '#111122', barSide: '#050510',
-            vip: '#550022',
-            pool: 'rgba(0, 255, 255, 0.6)',
-            highlight: 'rgba(0, 255, 255, 0.3)'
+        // TILES IDs
+        const T = { 
+            FLOOR_LOBBY: 0, FLOOR_WOOD: 1, FLOOR_DISCO: 2, FLOOR_POOL: 3, FLOOR_SUITE: 4,
+            WALL: 10, BAR_COUNTER: 11, BAR_SHELF: 12, DJ_BOOTH: 13, POOL_WATER: 14,
+            PLANT: 15, RUG_RED: 16,
+            SEAT_BASIC: 20, SOFA: 21, BED: 22, BED_ROUND: 23, JACUZZI: 24
         };
 
-        // GLOBAL STATE
+        const C = {
+            lobbyA: '#aaaaaa', lobbyB: '#999999',
+            woodA: '#2c1a12', woodB: '#1a0f0a', 
+            discoA: '#220044', discoB: '#440088',
+            suiteA: '#440011', suiteB: '#330000', 
+            poolTile: '#eeeeff', 
+            wallTop: '#555577', wallSide: '#333355',
+            highlight: 'rgba(255, 0, 100, 0.3)'
+        };
+
         let myUserId = null;
         let myPlayerRef = null;
         let players = {};
@@ -221,22 +308,81 @@
         let discoTick = 0;
         let drunkLevel = 0;
         let isDancingLocal = false;
+        let ytPlayer = null;
+        let currentDJId = null;
+        let audioEnabled = false;
+        
+        // ROOM STATE
+        let currentRoom = 'lobby'; 
+        let motelMode = false;
+        let lastInviteFrom = null;
+
+        let soccerBall = { x: 16, y: 16, vx: 0, vy: 0, lastSync: 0 };
+        let ballRef = doc(db, 'artifacts', APP_ID, 'public', 'data', WORLD_COLLECTION, 'ball');
 
         // --- MAP GENERATION ---
         const map = new Array(MAP_SIZE).fill(0).map(() => new Array(MAP_SIZE).fill(0));
+        
         function initMap() {
-            for(let y=0; y<MAP_SIZE; y++) for(let x=0; x<MAP_SIZE; x++) {
-                if (x===0 || y===0) { map[y][x] = T.WALL; continue; }
-                if (y===2 && x>=2 && x<=6) { map[y][x] = T.BAR; continue; } // Bar
-                if (y===2 && x>=10 && x<=13) { map[y][x] = T.DJ; continue; } // DJ
-                if (x>=6 && x<=10 && y>=6 && y<=10) { map[y][x] = T.DANCE; continue; } // Pista
-                if (x>=12 && y>=12) { map[y][x] = T.VIP; continue; } // VIP
-                if (x<=4 && y>=10) { map[y][x] = T.POOL; continue; } // Jacuzzi
+            // SAFE GUARD: Clear Map
+            for(let y=0; y<MAP_SIZE; y++) for(let x=0; x<MAP_SIZE; x++) map[y][x] = T.FLOOR_LOBBY; 
+
+            if (currentRoom === 'lobby') {
+                generateLobbyMap();
+            } else {
+                generateSuiteMap();
             }
         }
+
+        function generateLobbyMap() {
+            for(let y=0; y<MAP_SIZE; y++) for(let x=0; x<MAP_SIZE; x++) {
+                if (x===0 || y===0 || x===MAP_SIZE-1 || y===MAP_SIZE-1) { map[y][x] = T.WALL; continue; }
+
+                // Zones
+                if (x < 16 && y >= 14) { // Bar
+                    map[y][x] = T.FLOOR_WOOD;
+                    if(x===15 && y < 22) map[y][x] = T.WALL;
+                    if(x===1 && y>=18 && y<=24) map[y][x] = T.BAR_SHELF; 
+                    if(x===3 && y>=18 && y<=24) map[y][x] = T.BAR_COUNTER; 
+                    if(x===4 && y>=18 && y<=24) map[y][x] = T.SEAT_BASIC; 
+                    if(x>=8 && y>=25) map[y][x] = T.SOFA; 
+                }
+                else if (x < 16 && y < 14) { // Lobby
+                    map[y][x] = T.FLOOR_LOBBY;
+                    if(y===13 && x!==8) map[y][x] = T.WALL; 
+                    if(x===15 && y!==6) map[y][x] = T.WALL;
+                    if(y===2 && x>=6 && x<=10) map[y][x] = T.BAR_COUNTER; 
+                    if(x>=7 && x<=9 && y>=7 && y<=10) map[y][x] = T.RUG_RED; 
+                    if(x===1 && y===1) map[y][x] = T.PLANT;
+                }
+                else if (x >= 16 && y < 16) { // Disco
+                    map[y][x] = T.FLOOR_DISCO;
+                    if(y===15 && x!==24) map[y][x] = T.WALL;
+                    if(y===2 && x>=22 && x<=26) map[y][x] = T.DJ_BOOTH;
+                    if(x>=20 && x<=28 && y>=6 && y<=12) map[y][x] = T.FLOOR_DISCO;
+                }
+                else { // Pool
+                    map[y][x] = T.FLOOR_POOL;
+                    if(x>=20 && x<=28 && y>=20 && y<=28) map[y][x] = T.POOL_WATER;
+                    if(x>=28 && y>=17 && y<=18) map[y][x] = T.BED;
+                }
+            }
+        }
+
+        function generateSuiteMap() {
+            for(let y=0; y<MAP_SIZE; y++) for(let x=0; x<MAP_SIZE; x++) {
+                if (x===0 || y===0 || x===MAP_SIZE-1 || y===MAP_SIZE-1) { map[y][x] = T.WALL; continue; }
+                map[y][x] = T.FLOOR_SUITE;
+                if (x < 8 || x > 24 || y < 8 || y > 24) { map[y][x] = T.WALL; continue; }
+                if (x>=15 && x<=17 && y>=15 && y<=17) map[y][x] = T.BED_ROUND;
+                if (x>=20 && x<=22 && y>=10 && y<=12) map[y][x] = T.JACUZZI;
+                if (x===9 && y===9) map[y][x] = T.PLANT;
+                if (x===23 && y===9) map[y][x] = T.PLANT;
+            }
+        }
+
         initMap();
 
-        // --- MATH ---
         function gridToScreen(gx, gy) {
             return {
                 x: (gx - gy) * (TILE_W / 2) + offset.x,
@@ -252,255 +398,342 @@
             };
         }
 
+        // --- ROOM & INVITE LOGIC ---
+        window.switchRoom = async (roomId) => {
+            currentRoom = roomId;
+            initMap();
+            
+            const me = players[myUserId];
+            if (me) {
+                // Reset pos based on room
+                if (roomId === 'lobby') { me.gridX = 8; me.gridY = 8; }
+                else { me.gridX = 16; me.gridY = 20; }
+                me.visualX = me.gridX; me.visualY = me.gridY;
+                
+                await updateDoc(myPlayerRef, { room: roomId, x: me.gridX, y: me.gridY });
+            }
+
+            document.getElementById('room-indicator').style.display = currentRoom==='lobby'?'none':'block';
+            document.getElementById('room-indicator').innerText = currentRoom==='lobby'?'':(currentRoom===`suite_${myUserId}`?'MINHA SUÍTE':'SUÍTE PRIVADA');
+            showToast(currentRoom === 'lobby' ? "Lobby Principal" : "🔥 Suíte Privada 🔥");
+        };
+
+        window.sendInvite = async () => {
+            document.getElementById('interact-menu').style.display = 'none';
+            if(!selectedTargetId) return;
+            
+            // Write to TARGET's document that they have an invite FROM me
+            const targetRef = doc(db, 'artifacts', APP_ID, 'public', 'data', PLAYERS_COLLECTION, selectedTargetId);
+            // We use a special field "inviteFrom" on the target
+            await updateDoc(targetRef, { 
+                inviteFrom: myUserId, 
+                inviteTime: Date.now() 
+            }).catch(e => console.log("Invite failed", e));
+            
+            showToast("Convite enviado! 💌");
+            
+            // I go to my suite immediately to wait
+            if(currentRoom !== `suite_${myUserId}`) {
+                switchRoom(`suite_${myUserId}`);
+            }
+        };
+
+        // UI Listeners for Modal
+        document.getElementById('btn-accept-invite').onclick = async () => {
+            document.getElementById('invite-modal').style.display = 'none';
+            if(lastInviteFrom) {
+                switchRoom(`suite_${lastInviteFrom}`);
+                showToast("Entrando na Suíte...");
+            }
+        };
+        document.getElementById('btn-deny-invite').onclick = () => {
+            document.getElementById('invite-modal').style.display = 'none';
+            showToast("Recusou.");
+        };
+
+        // --- YOUTUBE ---
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        window.onYouTubeIframeAPIReady = function() {
+            ytPlayer = new YT.Player('youtube-player', { height: '1', width: '1', videoId: '' });
+        };
+        
         // --- PLAYER ---
         class Player {
             constructor(id, data) {
                 this.id = id;
+                this.gridX = data.x || 4; this.gridY = data.y || 4;
+                this.visualX = this.gridX; this.visualY = this.gridY;
+                this.inPool = false; 
+                this.room = data.room || 'lobby';
                 this.sync(data);
-                const s = gridToScreen(this.gridX, this.gridY);
-                this.x = s.x; this.y = s.y;
-                this.tx = s.x; this.ty = s.y;
                 this.danceOffset = 0;
             }
-
             sync(data) {
-                if(this.id !== myUserId) {
-                    this.gridX = data.x; this.gridY = data.y;
-                    const s = gridToScreen(this.gridX, this.gridY);
-                    this.tx = s.x; this.ty = s.y;
-                    this.dancing = data.dancing || false;
-                    this.drunk = data.drunk || false;
-                    this.drink = data.drink || false;
-                } else {
-                    if(this.gridX === undefined) { this.gridX=data.x||8; this.gridY=data.y||8; }
-                }
-
+                this.nick = data.nick || 'Visitante';
                 this.skin = data.skin || '#fcbcb8';
                 this.acc = data.acc || 'none';
+                this.musicId = data.musicId || null;
+                this.carrying = data.carrying || null;
+                this.diving = data.diving || false;
+                this.room = data.room || 'lobby';
+                this.isAdmin = (this.nick.toUpperCase().includes('ADMIN') || this.nick.toUpperCase().includes('MOD'));
                 
+                // Invite Logic (Only for me)
+                if(this.id === myUserId && data.inviteFrom && data.inviteTime > (this.lastInviteCheck || 0)) {
+                    this.lastInviteCheck = Date.now();
+                    // Don't show if older than 10s
+                    if (Date.now() - data.inviteTime < 10000) {
+                        lastInviteFrom = data.inviteFrom;
+                        const inviterName = players[lastInviteFrom]?.nick || "Alguém";
+                        document.getElementById('invite-text').innerText = `${inviterName} te chamou pro abate. Aceitas?`;
+                        document.getElementById('invite-modal').style.display = 'block';
+                    }
+                }
+
+                if(this.id !== myUserId) {
+                    this.gridX = data.x; this.gridY = data.y;
+                    this.dancing = data.dancing || false;
+                    this.drink = data.drink || false;
+                    this.sitting = data.sitting || false;
+                } else {
+                    if(Math.abs(data.x - this.gridX) > 5) { this.gridX = data.x; this.gridY = data.y; }
+                }
                 if (data.chatId && data.chatId !== this.lcid) {
                     this.msg = data.msg; this.lcid = data.chatId; this.mt = 300;
                 }
-
+                if (data.emoteId && data.emoteId !== this.leid) {
+                    this.leid = data.emoteId; this.playEmote(data.emote);
+                }
                 if (data.lastInt && data.lastInt > (this.lastIntTime || 0)) {
-                    this.lastIntTime = data.lastInt;
-                    this.playInteraction(data.intType);
+                    this.lastIntTime = data.lastInt; this.playInteraction(data.intType);
                 }
             }
-
             playInteraction(type) {
-                let emoji = type==='kiss'?'💋':(type==='sarrar'?'🔥':'👋');
-                for(let i=0; i<5; i++) particles.push({ x:this.x, y:this.y-40, vx:(Math.random()-0.5)*2, vy:-Math.random()*2-1, char:emoji, life:60, c:'#fff' });
-                if(type === 'sarrar') this.shake = 30;
-            }
-
-            update() {
-                const d = Math.hypot(this.tx - this.x, this.ty - this.y);
-                if (d > 1) {
-                    this.x += (this.tx - this.x) * 0.15;
-                    this.y += (this.ty - this.y) * 0.15;
-                    // Se andar, para de dançar
-                    if (this.id === myUserId && isDancingLocal && d > 5) {
-                        isDancingLocal = false; sendState(); checkContext();
-                    }
-                }
+                const s = gridToScreen(this.visualX, this.visualY);
+                let emoji = type==='kiss'?'💋':(type==='sarrar'?'🔥':(type==='slap'?'👋':'💪'));
+                if(type === 'obaoba') emoji = '💕';
+                for(let i=0; i<8; i++) particles.push({ x:s.x, y:s.y-40, vx:(Math.random()-0.5)*3, vy:-Math.random()*3-1, char:emoji, life:60, c:'#fff' });
                 
-                if (this.mt > 0) this.mt--;
-                if (this.shake > 0) this.shake--;
+                if(type === 'obaoba') {
+                    const shakeInt = setInterval(()=>{ offset.x+=(Math.random()-0.5)*10; offset.y+=(Math.random()-0.5)*10; }, 16);
+                    setTimeout(()=>clearInterval(shakeInt), 500);
+                }
+            }
+            playEmote(emoji) {
+                const s = gridToScreen(this.visualX, this.visualY);
+                particles.push({ x:s.x, y:s.y-60, vx:0, vy:-0.5, char:emoji, life:100, c:'#fff', scale: 2 });
+                if(emoji === '🤮') for(let i=0; i<20; i++) particles.push({ x:s.x, y:s.y-20, vx:(Math.random()-0.5)*2, vy:Math.random()*3, char:'.', life:50, c:'#0f0' });
+            }
+            update() {
+                if(this.room !== currentRoom) return;
 
-                // Animação de Dança
-                if (this.dancing || (this.id === myUserId && isDancingLocal)) {
+                const currentTile = map[Math.round(this.visualY)]?.[Math.round(this.visualX)];
+                const wasInPool = this.inPool;
+                this.inPool = (currentTile === T.POOL_WATER || currentTile === T.JACUZZI);
+                
+                if (this.inPool !== wasInPool) {
+                    const s = gridToScreen(this.visualX, this.visualY);
+                     for(let i=0; i<5; i++) particles.push({ x:s.x, y:s.y, vx:(Math.random()-0.5)*3, vy:Math.random()*-2, char:'💧', life:40, c:'#0ff', scale:0.5 });
+                }
+
+                let carrier = null;
+                Object.values(players).forEach(p => { if(p.carrying === this.id) carrier = p; });
+                if(carrier) {
+                    this.gridX = carrier.gridX; this.gridY = carrier.gridY;
+                    this.visualX = carrier.visualX; this.visualY = carrier.visualY;
+                    if(this.room !== carrier.room) this.room = carrier.room; // Sync room if carried
+                    this.elevation = 15;
+                } else {
+                    this.elevation = 0;
+                    this.visualX += (this.gridX - this.visualX) * 0.2;
+                    this.visualY += (this.gridY - this.visualY) * 0.2;
+                }
+                if (this.mt > 0) this.mt--;
+                if ((this.dancing || (this.id === myUserId && isDancingLocal)) && !this.sitting) {
                     this.danceOffset = Math.abs(Math.sin(Date.now()/100)) * 10;
                 } else {
                     this.danceOffset = Math.sin(Date.now()/300) * 2;
                 }
             }
-
             draw(ctx) {
-                let dx = this.x;
-                let dy = this.y - TILE_H - this.danceOffset;
+                if(this.room !== currentRoom) return; 
 
-                // Drunk/Shake effect
-                if (this.drunk || this.shake > 0) {
-                    dx += (Math.random()-0.5)*4;
-                    dy += (Math.random()-0.5)*4;
-                }
+                const s = gridToScreen(this.visualX, this.visualY);
+                let dx = s.x; let dy = s.y - TILE_H - this.danceOffset - (this.elevation || 0);
+                if (this.sitting) dy += 10;
+                if (this.inPool && !this.diving) dy += 10; 
 
-                // Sombra
-                ctx.fillStyle = 'rgba(0,0,0,0.4)';
-                ctx.beginPath(); ctx.ellipse(this.x, this.y - 10, 14, 7, 0, 0, Math.PI*2); ctx.fill();
-
-                // Boneco
+                if(!this.elevation) { ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(s.x, s.y - 10, 14, 7, 0, 0, Math.PI*2); ctx.fill(); }
+                if (this.diving) ctx.globalAlpha = 0.4;
+                
                 this.drawBody(ctx, dx, dy);
                 this.drawAcc(ctx, dx, dy);
+                ctx.globalAlpha = 1.0; 
 
-                // Drink
-                if(this.drink) {
-                    const hx = dx+18; const hy = dy;
-                    ctx.fillStyle='#fff'; ctx.fillRect(hx, hy, 6, 10);
-                    ctx.fillStyle=this.drink==='beer'?'#fc0':'#0ff'; ctx.fillRect(hx+1, hy+1, 4, 8);
+                if (this.inPool && !this.diving) {
+                    ctx.strokeStyle = 'rgba(200,255,255,0.5)';
+                    ctx.beginPath(); ctx.ellipse(dx, dy+12, 16, 8, 0, 0, Math.PI*2); ctx.stroke();
                 }
 
-                // Chat
+                if(this.isAdmin) { 
+                    ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,0,0,0.3)'; ctx.beginPath(); ctx.arc(dx, dy-20, 20, 0, Math.PI*2); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+                }
+
+                if(this.musicId) {
+                    const bx = dx - 15; const by = dy - 5; const beat = Math.abs(Math.sin(Date.now()/200))*2;
+                    ctx.fillStyle = '#222'; ctx.fillRect(bx, by-beat, 14, 10);
+                }
+                ctx.font = "bold 9px Roboto"; ctx.fillStyle = this.isAdmin ? "#ffaaaa" : "#fff"; ctx.textAlign = "center";
+                ctx.strokeStyle = "rgba(0,0,0,0.8)"; ctx.lineWidth = 2;
+                ctx.strokeText(this.nick.toUpperCase(), dx, dy - 22); ctx.fillText(this.nick.toUpperCase(), dx, dy - 22);
+                
+                if(this.drink) { const hx = dx+18; const hy = dy; ctx.fillStyle='#fff'; ctx.fillRect(hx, hy, 6, 10); ctx.fillStyle=this.drink==='beer'?'#fc0':'#0ff'; ctx.fillRect(hx+1, hy+1, 4, 8); }
                 if (this.msg && this.mt > 0) drawBubble(ctx, dx, dy - 40, this.msg);
             }
-
             drawBody(ctx, x, y) {
                 let fill = this.skin.startsWith('#') ? this.skin : '#fcbcb8';
-                if(this.skin === 'alien') fill = '#0f0';
-                if(this.skin === 'gold') fill = '#fc0';
-                if(this.skin === 'latex') fill = '#111';
-
-                ctx.fillStyle = fill;
-                ctx.strokeStyle = this.id === myUserId ? '#0ff' : 'rgba(0,0,0,0.5)';
-                ctx.lineWidth = this.id === myUserId ? 2 : 1;
-
-                // Cheeks
+                if(this.skin === 'alien') fill = '#0f0'; if(this.skin === 'gold') fill = '#fc0'; if(this.skin === 'latex') fill = '#111';
+                ctx.fillStyle = fill; ctx.strokeStyle = this.id === myUserId ? '#0ff' : 'rgba(0,0,0,0.5)'; ctx.lineWidth = this.id === myUserId ? 2 : 1;
+                ctx.beginPath(); ctx.arc(x, y-10, 12, 0, Math.PI*2); ctx.fill(); ctx.stroke();
                 ctx.beginPath(); ctx.arc(x-9, y, 15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
                 ctx.beginPath(); ctx.arc(x+9, y, 15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                
-                // Latex Shine
-                if(this.skin==='latex') {
-                    ctx.fillStyle='rgba(255,255,255,0.6)';
-                    ctx.beginPath(); ctx.arc(x-12, y-6, 3, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(x+6, y-6, 3, 0, Math.PI*2); ctx.fill();
-                }
+                if(this.skin==='latex') { ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(x-12, y-6, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x+6, y-6, 3, 0, Math.PI*2); ctx.fill(); }
             }
-
             drawAcc(ctx, x, y) {
-                const acc = this.acc;
-                
-                // Tanga (Ajustada)
-                if (acc === 'tanga') {
-                    ctx.fillStyle = '#ff00ff'; // Neon Pink
-                    ctx.beginPath(); ctx.moveTo(x-20, y); ctx.lineTo(x, y+24); ctx.lineTo(x+20, y); 
-                    ctx.quadraticCurveTo(x, y+10, x-20, y); ctx.fill();
-                }
-                // Fio Dental (Ajustado)
-                if (acc === 'fio') {
-                    ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2; // Neon Green
-                    ctx.beginPath(); ctx.moveTo(x-22, y-5); ctx.lineTo(x, y+20); ctx.lineTo(x+22, y-5); ctx.stroke();
-                }
-                // Coleira/Harness
-                if (acc === 'harness') {
-                    ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(x-10, y-15); ctx.lineTo(x+10, y-15); ctx.stroke(); // Pescoço
-                    ctx.beginPath(); ctx.moveTo(x, y-15); ctx.lineTo(x, y+20); ctx.stroke(); // Centro
-                }
-                // Asas Neon
-                if (acc === 'wings') {
-                    ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2; ctx.globalAlpha = 0.6;
-                    ctx.beginPath(); ctx.moveTo(x, y-10); ctx.quadraticCurveTo(x-40, y-40, x-25, y+10); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(x, y-10); ctx.quadraticCurveTo(x+40, y-40, x+25, y+10); ctx.stroke();
-                    ctx.globalAlpha = 1;
-                }
+                if (this.acc === 'tanga') { ctx.fillStyle = '#ff00ff'; ctx.beginPath(); ctx.moveTo(x-20, y); ctx.lineTo(x, y+24); ctx.lineTo(x+20, y); ctx.quadraticCurveTo(x, y+10, x-20, y); ctx.fill(); }
+                if (this.acc === 'fio') { ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x-22, y-5); ctx.lineTo(x, y+20); ctx.lineTo(x+22, y-5); ctx.stroke(); }
+                if (this.acc === 'wings') { ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(x, y-10); ctx.quadraticCurveTo(x-40, y-40, x-25, y+10); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y-10); ctx.quadraticCurveTo(x+40, y-40, x+25, y+10); ctx.stroke(); ctx.globalAlpha = 1; }
             }
         }
 
-        // --- RENDER LOOP ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
-        function resize() {
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            offset.x = canvas.width / 2;
-            offset.y = (canvas.height / 2) - (MAP_SIZE*TILE_H)/3;
-        }
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         window.onresize = resize; resize();
 
         function drawPrism(x, y, w, h, z, cTop, cSide) {
-            ctx.fillStyle = cTop;
-            ctx.beginPath(); ctx.moveTo(x, y-z); 
-            ctx.lineTo(x+w/2, y-z+h/2); ctx.lineTo(x, y-z+h); ctx.lineTo(x-w/2, y-z+h/2); ctx.fill();
-            
-            ctx.fillStyle = cSide;
-            ctx.beginPath(); ctx.moveTo(x+w/2, y-z+h/2); ctx.lineTo(x+w/2, y+h/2); 
-            ctx.lineTo(x, y+h); ctx.lineTo(x, y-z+h); ctx.fill();
-            
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.beginPath(); ctx.moveTo(x-w/2, y-z+h/2); ctx.lineTo(x-w/2, y+h/2); 
-            ctx.lineTo(x, y+h); ctx.lineTo(x, y-z+h); ctx.fill();
+            ctx.fillStyle = cTop; ctx.beginPath(); ctx.moveTo(x, y-z); ctx.lineTo(x+w/2, y-z+h/2); ctx.lineTo(x, y-z+h); ctx.lineTo(x-w/2, y-z+h/2); ctx.fill();
+            ctx.fillStyle = cSide; ctx.beginPath(); ctx.moveTo(x+w/2, y-z+h/2); ctx.lineTo(x+w/2, y+h/2); ctx.lineTo(x, y+h); ctx.lineTo(x, y-z+h); ctx.fill();
+            ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.moveTo(x-w/2, y-z+h/2); ctx.lineTo(x-w/2, y+h/2); ctx.lineTo(x, y+h); ctx.lineTo(x, y-z+h); ctx.fill();
+        }
+
+        function drawNeonBar(x, y, type) {
+            if (type === T.BAR_COUNTER) {
+                drawPrism(x, y, TILE_W, TILE_H, 25, '#111', '#000');
+                ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `hsl(${discoTick%360}, 100%, 50%)`; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x-30, y-20); ctx.lineTo(x+30, y-20); ctx.stroke(); ctx.globalCompositeOperation = 'source-over';
+            }
+            if (type === T.BAR_SHELF) {
+                drawPrism(x, y, TILE_W, TILE_H, 50, '#221111', '#110a0a');
+                for(let i=0; i<4; i++) { ctx.fillStyle = `hsl(${(i*90 + discoTick)%360}, 100%, 60%)`; ctx.fillRect(x - 20 + i*10, y - 35, 6, 12); }
+            }
         }
 
         function draw() {
             discoTick++;
-            ctx.fillStyle = '#0f0f1a'; ctx.fillRect(0,0,canvas.width, canvas.height);
-
-            // Luzes
-            const cx = canvas.width/2; const cy = canvas.height/2;
-            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 500);
-            grad.addColorStop(0, `hsla(${(discoTick)%360}, 60%, 50%, 0.1)`);
-            grad.addColorStop(1, 'transparent');
-            ctx.fillStyle = grad; ctx.fillRect(0,0,canvas.width,canvas.height);
-
-            // MAPA
-            for(let y=0; y<MAP_SIZE; y++) for(let x=0; x<MAP_SIZE; x++) {
-                const t = map[y][x];
-                const p = gridToScreen(x, y);
-
-                if (t === T.WALL) {
-                    drawPrism(p.x, p.y, TILE_W, TILE_H, 60, C.wallTop, C.wallSide);
-                    continue;
+            if(myUserId && players[myUserId]) {
+                const me = players[myUserId];
+                // SAFE GUARD: Valid pos?
+                if (me.visualX === undefined || me.visualY === undefined) {
+                    me.visualX = 8; me.visualY = 8;
                 }
 
-                // Chão
-                let c = (x+y)%2===0 ? C.floor : C.floorAlt;
-                if (t===T.DANCE) c = (x+y+Math.floor(discoTick/10))%2===0 ? C.danceA : C.danceB;
-                if (t===T.VIP) c = C.vip;
-                if (x===hoveredTile.x && y===hoveredTile.y) c = C.highlight;
-
-                ctx.beginPath(); ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p.x+TILE_W/2, p.y+TILE_H/2); ctx.lineTo(p.x, p.y+TILE_H); ctx.lineTo(p.x-TILE_W/2, p.y+TILE_H/2);
-                ctx.fillStyle = c; ctx.fill(); 
-                ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.stroke();
-
-                if(t===T.BAR) drawPrism(p.x, p.y, TILE_W, TILE_H, 25, C.barTop, C.barSide);
-                if(t===T.DJ) drawPrism(p.x, p.y, TILE_W, TILE_H, 30, '#222', '#000');
+                const playerIsoX = (me.visualX - me.visualY) * (TILE_W/2);
+                const playerIsoY = (me.visualX + me.visualY) * (TILE_H/2);
+                offset.x += ((canvas.width/2 - playerIsoX) - offset.x) * 0.1;
+                offset.y += ((canvas.height/2 - playerIsoY) - offset.y) * 0.1;
+            } else { 
+                offset.x = canvas.width / 2; offset.y = (canvas.height / 2) - (MAP_SIZE*TILE_H)/4; 
             }
 
-            // PLAYERS
-            const sorted = Object.values(players).sort((a,b) => a.y - b.y);
-            sorted.forEach(p => { p.update(); p.draw(ctx); });
+            ctx.fillStyle = '#050510'; ctx.fillRect(0,0,canvas.width, canvas.height);
 
-            // PARTICLES
+            // Draw Map
+            for(let i = 0; i < MAP_SIZE * 2; i++) {
+                for(let j = 0; j <= i; j++) {
+                    const x = j; const y = i - j;
+                    if(x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) drawTile(x, y);
+                }
+            }
+            
+            // Draw Players (Only current room)
+            const sorted = Object.values(players).filter(p=>p.room===currentRoom).sort((a,b) => a.visualY - b.visualY);
+            sorted.forEach(p => { 
+                if(p) { // Check player exists
+                    p.update(); 
+                    p.draw(ctx); 
+                }
+            });
+
+            // Particles
             for(let i=particles.length-1; i>=0; i--) {
                 let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life--;
-                ctx.fillStyle = p.c; ctx.font = "16px Arial"; ctx.fillText(p.char, p.x, p.y);
+                if(p.scale) ctx.font = `${16 * p.scale}px Arial`; else ctx.font = "16px Arial";
+                ctx.fillStyle = p.c; ctx.fillText(p.char, p.x, p.y);
                 if(p.life<=0) particles.splice(i,1);
             }
 
-            // Drunk Effect
-            if (drunkLevel > 0) {
-                offset.x += (Math.random()-0.5)*(drunkLevel*0.1);
-                offset.y += (Math.random()-0.5)*(drunkLevel*0.1);
-                drunkLevel -= 0.05;
-                document.getElementById('drunk-overlay').style.opacity = drunkLevel / 100;
-            }
+            if(motelMode && currentRoom !== 'lobby') { ctx.fillStyle = 'rgba(255, 0, 50, 0.15)'; ctx.fillRect(0,0,canvas.width,canvas.height); }
 
             requestAnimationFrame(draw);
         }
 
-        // --- INTERACTION & CONTEXT ---
+        function drawTile(x, y) {
+            const t = map[y][x];
+            const p = gridToScreen(x, y);
+            if (p.x < -100 || p.x > canvas.width + 100 || p.y < -100 || p.y > canvas.height + 100) return;
+
+            if (t === T.BAR_COUNTER || t === T.BAR_SHELF) { drawPrism(p.x, p.y, TILE_W, TILE_H, 0, C.woodA, C.woodB); drawNeonBar(p.x, p.y, t); return; }
+            if (t === T.PLANT) { drawPrism(p.x, p.y, TILE_W, TILE_H, 0, C.lobbyA, C.lobbyB); /* Plant logic */ return; }
+
+            if (t >= 10 && t < 20 && t !== T.POOL_WATER && t !== T.RUG_RED && t !== T.JACUZZI) {
+                drawPrism(p.x, p.y, TILE_W, TILE_H, 80, C.wallTop, C.wallSide); return;
+            }
+
+            let c = C.lobbyA;
+            if(t===T.FLOOR_LOBBY) c = (x+y)%2===0 ? C.lobbyA : C.lobbyB;
+            if(t===T.FLOOR_WOOD) c = (x+y)%2===0 ? C.woodA : C.woodB;
+            if(t===T.FLOOR_SUITE) c = (x+y)%2===0 ? C.suiteA : C.suiteB;
+            if(t===T.FLOOR_DISCO) { if((x+y)%2===0) c = C.discoA; else c = (Math.floor(discoTick/20)+x)%3===0 ? '#5500aa' : C.discoB; }
+            if(t===T.RUG_RED) c = '#aa0022';
+            
+            if(t===T.POOL_WATER || t===T.JACUZZI) { c = `rgba(0, 220, 255, ${0.5 + Math.sin((x+y+discoTick/10))*0.05})`; } 
+            else if (t===T.FLOOR_POOL) c = C.poolTile;
+            
+            if(x===hoveredTile.x && y===hoveredTile.y) c = C.highlight;
+
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x+TILE_W/2, p.y+TILE_H/2); ctx.lineTo(p.x, p.y+TILE_H); ctx.lineTo(p.x-TILE_W/2, p.y+TILE_H/2);
+            ctx.fillStyle = c; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.stroke();
+
+            if(t===T.DJ_BOOTH) drawPrism(p.x, p.y, TILE_W, TILE_H, 30, '#111', '#000');
+            if(t===T.SEAT_BASIC) { ctx.fillStyle = '#5c1010'; ctx.beginPath(); ctx.arc(p.x, p.y+5, 8, 0, Math.PI*2); ctx.fill(); }
+            if(t===T.SOFA) drawPrism(p.x, p.y, 40, 20, 10, '#aa2222', '#550000');
+            if(t===T.BED) drawPrism(p.x, p.y, TILE_W, TILE_H, 5, '#cc0044', '#660022');
+            if(t===T.BED_ROUND) { ctx.fillStyle='#ff0044'; ctx.beginPath(); ctx.arc(p.x, p.y, 25, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#aa0022'; ctx.beginPath(); ctx.arc(p.x, p.y+5, 25, 0, Math.PI*2); ctx.fill(); }
+        }
+
         function checkContext() {
-            const me = players[myUserId];
-            if(!me) return;
-            const t = map[me.gridY][me.gridX];
-            const div = document.getElementById('ctx-ui');
-            div.innerHTML = '';
+            const me = players[myUserId]; if(!me) return;
+            const t = map[Math.round(me.gridY)][Math.round(me.gridX)];
+            const div = document.getElementById('ctx-ui'); div.innerHTML = '';
 
-            // Botão de Beber
-            if (me.drink) {
-                div.appendChild(mkBtn('VIRAR', 'glass-martini-alt', 'drink', consumeDrink));
-            } else if (t === T.BAR) {
-                div.appendChild(mkBtn('DRINK', 'cocktail', 'drink', () => getDrink('martini')));
-                div.appendChild(mkBtn('CERVEJA', 'beer', 'drink', () => getDrink('beer')));
+            if (me.carrying) div.appendChild(mkBtn('SOLTAR', 'arrow-down', 'red', dropPlayer));
+            
+            // Suite Actions
+            if (currentRoom !== 'lobby') {
+                div.appendChild(mkBtn('VOLTAR LOBBY', 'door-open', 'blue', () => switchRoom('lobby')));
+                div.appendChild(mkBtn('LUZ VERMELHA', 'lightbulb', 'red', toggleMotelMode));
+                if (t === T.BED_ROUND) div.appendChild(mkBtn('OBA OBA', 'heart', 'red', () => triggerInteract('obaoba')));
             }
 
-            // Botão de Dançar
-            if (t === T.DANCE) {
-                const label = isDancingLocal ? 'PARAR' : 'DANÇAR';
-                div.appendChild(mkBtn(label, 'music', 'dance', toggleDance));
-            }
+            if (me.drink) div.appendChild(mkBtn('VIRAR', 'glass-martini-alt', 'drink', consumeDrink)); 
+            else if (me.gridY > 18 && me.gridX < 5 && currentRoom === 'lobby') div.appendChild(mkBtn('DRINK', 'cocktail', 'drink', () => getDrink('martini')));
+            
+            if (t === T.POOL_WATER || t === T.JACUZZI) div.appendChild(mkBtn(me.diving ? 'EMERGIR' : 'MERGULHAR', 'water', 'blue', toggleDive));
+            if (t === T.FLOOR_DISCO && !me.sitting) div.appendChild(mkBtn(isDancingLocal?'PARAR':'DANÇAR', 'music', 'dance', toggleDance));
+            if (me.sitting) div.appendChild(mkBtn('LEVANTAR', 'walking', 'drink', standUp));
         }
 
         function mkBtn(txt, ico, cls, fn) {
@@ -510,46 +743,61 @@
 
         window.triggerInteract = async (type) => {
             document.getElementById('interact-menu').style.display = 'none';
+            if (type === 'obaoba') {
+                await updateDoc(myPlayerRef, { intType: 'obaoba', lastInt: Date.now() });
+                players[myUserId].playInteraction('obaoba');
+                return;
+            }
             if (!selectedTargetId || !myPlayerRef) return;
+            if (type === 'carry') {
+                await updateDoc(myPlayerRef, { carrying: selectedTargetId });
+                players[myUserId].carrying = selectedTargetId; showToast("Pegou!"); checkContext(); return;
+            }
             await updateDoc(myPlayerRef, { intType: type, target: selectedTargetId, lastInt: Date.now() });
-            players[myUserId].playInteraction(type);
-            showToast(`Mandou ${type}!`); selectedTargetId = null;
+            players[myUserId].playInteraction(type); showToast(`Mandou ${type}!`); selectedTargetId = null;
         };
 
-        window.closeMenu = () => document.getElementById('interact-menu').style.display = 'none';
+        window.dropPlayer = async () => { if(myPlayerRef) { await updateDoc(myPlayerRef, { carrying: null }); players[myUserId].carrying = null; showToast("Soltou!"); checkContext(); }};
+        
+        window.sendEmote = async (emoji) => {
+            document.getElementById('emote-menu').classList.remove('visible');
+            if (myPlayerRef) { await updateDoc(myPlayerRef, { emote: emoji, emoteId: crypto.randomUUID(), lastActive: Date.now() }); players[myUserId].playEmote(emoji); }
+        };
+        window.startDJ = async () => {
+            const val = document.getElementById('music-input').value;
+            const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+            const match = val.match(regExp);
+            if (match && match[1]) { await updateDoc(myPlayerRef, { musicId: match[1] }); showToast('Som na caixa! 🎵'); document.getElementById('music-menu').style.display='none'; }
+            else showToast('Link inválido!');
+        };
+        window.stopDJ = async () => { await updateDoc(myPlayerRef, { musicId: null }); document.getElementById('music-menu').style.display='none'; showToast('Música Parada.'); };
 
-        async function getDrink(type) {
-            players[myUserId].drink = type;
-            showToast(`Pegou ${type}!`);
-            sendState(); checkContext();
-        }
-        async function consumeDrink() {
-            players[myUserId].drink = false;
-            drunkLevel += 30;
-            showToast(drunkLevel>80?"🥴 VAI DAR PT!":"😋 Bateu!");
-            if(drunkLevel>80) spawnVomit(players[myUserId].x, players[myUserId].y);
-            sendState(); checkContext();
-        }
-        async function toggleDance() {
-            isDancingLocal = !isDancingLocal;
-            sendState(); checkContext();
-        }
-        function spawnVomit(x, y) {
-            for(let i=0; i<15; i++) particles.push({ x:x, y:y-20, vx:(Math.random()-0.5)*4, vy:Math.random()*4, c:'#0f0', char:'.', life:40 });
+        window.closeMenu = () => document.getElementById('interact-menu').style.display = 'none';
+        async function getDrink(type) { players[myUserId].drink = type; showToast(`Pegou ${type}!`); sendState(); checkContext(); }
+        async function consumeDrink() { players[myUserId].drink = false; drunkLevel += 25; sendState(); checkContext(); }
+        async function toggleDance() { isDancingLocal = !isDancingLocal; sendState(); checkContext(); }
+        async function toggleDive() { const me = players[myUserId]; me.diving = !me.diving; await updateDoc(myPlayerRef, { diving: me.diving }); checkContext(); }
+        async function toggleMotelMode() { motelMode = !motelMode; showToast(motelMode ? "🔥 Modo Motel ON 🔥" : "Luzes Normais"); }
+        async function standUp() { players[myUserId].sitting = false; sendState(); checkContext(); }
+
+        function drawBubble(ctx, x, y, text) {
+            ctx.font = "bold 10px Roboto"; const w = ctx.measureText(text).width + 16;
+            ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.roundRect(x-w/2, y-20, w, 22, 6); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x-4, y-5); ctx.lineTo(x+4, y-5); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.fillText(text, x, y-6);
         }
 
         function handleInput(cx, cy) {
+            if(!myUserId) return; 
             if(document.activeElement.tagName==='INPUT') return;
+            if(cx < 50 && cy > window.innerHeight - 50) return;
             const r = canvas.getBoundingClientRect();
-            const g = screenToGrid(cx-r.left, cy-r.top);
+            let g = screenToGrid(cx-r.left, cy-r.top);
 
             if (g.x>=0 && g.x<MAP_SIZE && g.y>=0 && g.y<MAP_SIZE) {
-                if (map[g.y][g.x] === T.WALL) return;
-
-                // Check click on player
                 let clickedPlayer = null;
-                Object.values(players).forEach(p => {
-                    if (p.id !== myUserId && p.gridX === g.x && p.gridY === g.y) clickedPlayer = p;
+                Object.values(players).filter(p=>p.room===currentRoom).forEach(p => { 
+                    if (p.id !== myUserId && Math.round(p.visualX) === g.x && Math.round(p.visualY) === g.y) clickedPlayer = p; 
                 });
 
                 if (clickedPlayer) {
@@ -557,105 +805,90 @@
                     const menu = document.getElementById('interact-menu');
                     menu.style.display = 'flex'; menu.style.left = cx+'px'; menu.style.top = cy+'px';
                 } else {
-                    document.getElementById('interact-menu').style.display = 'none';
-                    players[myUserId].gridX = g.x; players[myUserId].gridY = g.y;
-                    const s = gridToScreen(g.x, g.y);
+                    const me = players[myUserId];
+                    if(!me) return; 
                     
-                    // Drunk Walk
-                    if (drunkLevel > 30) {
-                        players[myUserId].tx = s.x + (Math.random()-0.5)*40;
-                        players[myUserId].ty = s.y + (Math.random()-0.5)*40;
-                    } else {
-                        players[myUserId].tx = s.x; players[myUserId].ty = s.y;
-                    }
-
-                    // Auto-stop dance
+                    me.gridX = g.x; me.gridY = g.y;
                     const t = map[g.y][g.x];
-                    if (t !== T.DANCE && isDancingLocal) { isDancingLocal = false; }
-                    
+                    if (t < 2 && isDancingLocal) isDancingLocal = false;
+                    me.sitting = (t >= 20); 
                     sendState(); checkContext();
                 }
             }
         }
         
         canvas.addEventListener('mousedown', e => handleInput(e.clientX, e.clientY));
-        canvas.addEventListener('touchstart', e => { e.preventDefault(); handleInput(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+        canvas.addEventListener('touchstart', e => { if(e.target.tagName!=='BUTTON'){e.preventDefault(); handleInput(e.touches[0].clientX, e.touches[0].clientY);} }, {passive:false});
         canvas.addEventListener('mousemove', e => {
             const r = canvas.getBoundingClientRect();
             hoveredTile = screenToGrid(e.clientX-r.left, e.clientY-r.top);
-            canvas.style.cursor = map[hoveredTile.y]?.[hoveredTile.x] ? 'pointer' : 'default';
+            const t = map[hoveredTile.y]?.[hoveredTile.x];
+            canvas.style.cursor = (t!==undefined) ? 'pointer' : 'default'; 
         });
 
         // --- NETWORKING ---
         let lastUpd = 0;
         async function sendState() {
             if(!myPlayerRef) return;
-            const now = Date.now();
-            if(now-lastUpd < 100) return;
-            lastUpd = now;
+            const now = Date.now(); if(now-lastUpd < 50) return; lastUpd = now;
             const me = players[myUserId];
             await updateDoc(myPlayerRef, {
                 x: me.gridX, y: me.gridY, dancing: isDancingLocal,
-                drink: me.drink || false, drunk: drunkLevel > 20, lastActive: now
+                drink: me.drink || false, drunk: drunkLevel > 20, 
+                sitting: me.sitting || false, lastActive: now, carrying: me.carrying || null,
+                diving: me.diving || false, room: currentRoom
             });
         }
         
         const chatIn = document.getElementById('chat-input');
         const doChat = async () => { if(chatIn.value.trim() && myPlayerRef) { await updateDoc(myPlayerRef, { msg: chatIn.value, chatId: crypto.randomUUID(), lastActive: Date.now() }); chatIn.value=''; } };
         document.getElementById('btn-send').onclick = doChat; chatIn.onkeydown = e => { if(e.key==='Enter') doChat(); };
+        document.getElementById('btn-emote').onclick = () => document.getElementById('emote-menu').classList.toggle('visible');
+        document.getElementById('btn-dj').onclick = () => document.getElementById('music-menu').style.display = 'flex';
+        document.getElementById('btn-audio-init').onclick = () => { audioEnabled = true; document.getElementById('btn-audio-init').style.display='none'; showToast('Áudio Ativado!'); };
+        document.getElementById('btn-custom').onclick = () => document.getElementById('custom-panel').classList.toggle('open');
 
-        // --- AUTH ---
+        // --- AUTH & SYNC ---
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 myUserId = u.uid;
                 myPlayerRef = doc(db, 'artifacts', APP_ID, 'public', 'data', PLAYERS_COLLECTION, myUserId);
-                await setDoc(myPlayerRef, { x: 8, y: 8, skin: '#fcbcb8', acc: 'none', lastActive: Date.now() }, {merge:true});
+                await setDoc(myPlayerRef, { lastActive: Date.now(), room: 'lobby' }, {merge:true}); 
                 setInterval(() => { if(myPlayerRef) updateDoc(myPlayerRef, { lastActive: Date.now() }).catch(()=>{}); }, 5000);
+                
                 onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', PLAYERS_COLLECTION), (snap) => {
                     const now = Date.now(); const ids = [];
                     snap.forEach(d => {
                         const dt = d.data();
                         if(now - (dt.lastActive||0) > 120000) return;
                         ids.push(d.id);
-                        if(!players[d.id]) players[d.id] = new Player(d.id, dt);
-                        else players[d.id].sync(dt);
+                        if(!players[d.id]) { players[d.id] = new Player(d.id, dt); } else { players[d.id].sync(dt); }
                     });
                     Object.keys(players).forEach(k => { if(!ids.includes(k)) delete players[k]; });
                 });
             } else signInAnonymously(auth);
         });
 
-        // UI HELPERS
-        function drawBubble(ctx, x, y, text) {
-            ctx.font = "bold 10px Roboto"; const w = ctx.measureText(text).width + 16;
-            ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.roundRect(x-w/2, y-20, w, 22, 6); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x-4, y-5); ctx.lineTo(x+4, y-5); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.fillText(text, x, y-6);
-        }
         function showToast(m){const t=document.getElementById('toast');t.innerText=m;t.style.display='block';setTimeout(()=>t.style.display='none',3000);}
-        const pnl = document.getElementById('custom-panel');
-        document.getElementById('btn-custom').onclick = () => pnl.classList.toggle('open');
-
-        const tmp = {s:'#fcbcb8', a:'none'};
+        
+        const tmp = {s:'#fcbcb8', a:'none', n: ''};
         ['#fcbcb8', '#a56e50', '#3d231a', 'latex', 'alien', 'gold'].forEach(c => {
-            const b=document.createElement('div'); b.className='skin-opt';
-            b.style.background = c==='latex'?'#000':(c==='alien'?'#0f0':c);
+            const b=document.createElement('div'); b.className='skin-opt'; b.style.background = c==='latex'?'#000':(c==='alien'?'#0f0':c);
             b.onclick=()=>{ tmp.s=c; document.querySelectorAll('.skin-opt').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); };
             document.getElementById('skin-grid').appendChild(b);
         });
-        ['none', 'tanga', 'fio', 'cinta', 'wings'].forEach(a => {
+        ['none', 'tanga', 'fio', 'harness', 'wings'].forEach(a => {
             const b=document.createElement('div'); b.className='acc-btn'; b.innerText=a.toUpperCase();
             b.onclick=()=>{ tmp.a=a; document.querySelectorAll('.acc-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); };
             document.getElementById('acc-grid').appendChild(b);
         });
         document.getElementById('btn-save').onclick = async () => {
-            if(myPlayerRef) await updateDoc(myPlayerRef, { skin: tmp.s, acc: tmp.a });
-            pnl.classList.remove('open'); showToast('Look Salvo! 🔥');
+            const nameInput = document.getElementById('input-name').value.trim() || 'Guest';
+            if(myPlayerRef) await updateDoc(myPlayerRef, { skin: tmp.s, acc: tmp.a, nick: nameInput });
+            document.getElementById('custom-panel').classList.remove('open'); showToast('Salvo!');
         };
-
         draw();
     </script>
 </body>
 </html>
-
 
