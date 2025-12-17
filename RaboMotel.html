@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rabo Motel - v6.0 Perfect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0; overflow: hidden; background-color: #0f0f1a;
+            font-family: 'Roboto', sans-serif; touch-action: none; user-select: none;
+        }
+        canvas { display: block; image-rendering: pixelated; }
+
+        /* UI LAYER */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; z-index: 20;
+        }
+
+        /* Top HUD */
+        .hud-top {
+            padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); pointer-events: auto;
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .logo { 
+            font-family: 'Press Start 2P', cursive; color: #00ffff; 
+            text-shadow: 2px 2px 0px #000033, -1px -1px 0px #ff00ff; 
+            font-size: 12px; line-height: 1.5; transform: skew(-5deg);
+        }
+        
+        .btn-style {
+            background: linear-gradient(135deg, #4400cc, #220066); border: 2px solid #8800ff; color: white;
+            padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 10px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(50,0,200,0.4); text-transform: uppercase; display: flex; align-items: center; gap: 5px;
+        }
+        .btn-style:active { transform: scale(0.95); }
+
+        /* Context Actions (Botões Flutuantes) */
+        .ctx-container {
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; pointer-events: auto;
+        }
+        .ctx-btn {
+            background: rgba(0,0,0,0.9); border: 2px solid #fff; color: white; padding: 10px 20px;
+            border-radius: 50px; font-weight: 900; font-size: 12px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px;
+            animation: bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-transform: uppercase;
+        }
+        .ctx-btn:hover { transform: scale(1.1); }
+        .ctx-btn.drink { border-color: #00ffff; color: #00ffff; }
+        .ctx-btn.dance { border-color: #ff00ff; color: #ff00ff; }
+        @keyframes bounceIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        /* Interact Menu */
+        #interact-menu {
+            position: absolute; background: rgba(10, 10, 25, 0.95); border: 2px solid #00ffff;
+            padding: 8px; border-radius: 12px; display: none; flex-direction: column; gap: 5px;
+            pointer-events: auto; z-index: 100; box-shadow: 0 0 20px rgba(0,255,255,0.3);
+            animation: popIn 0.2s;
+        }
+        .int-btn {
+            background: #220044; color: #cc99ff; padding: 8px 12px; border-radius: 6px; 
+            cursor: pointer; font-size: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px;
+            transition: 0.2s; border: 1px solid #440066;
+        }
+        .int-btn:hover { background: #440088; color: white; border-color: #8800ff; }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        /* Custom Panel */
+        #custom-panel {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 15, 30, 0.98); border: 2px solid #8800ff; padding: 20px; border-radius: 16px;
+            pointer-events: auto; display: none; width: 340px; max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 0 50px rgba(100,0,255,0.3); backdrop-filter: blur(15px);
+        }
+        #custom-panel.open { display: block; }
+
+        .section-header { color: #cc88ff; font-size: 10px; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #442266; padding-bottom: 4px; letter-spacing: 1px; }
+        .skin-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+        .skin-opt { width: 100%; aspect-ratio: 1; border-radius: 50%; border: 3px solid #332244; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .skin-opt:hover { transform: scale(1.1); border-color: #fff; }
+        .skin-opt.selected { border-color: #00ffff; box-shadow: 0 0 15px #00ffff; }
+
+        .acc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .acc-btn { 
+            background: #221133; border: 1px solid #442255; color: #ccaaff; padding: 8px; 
+            border-radius: 8px; font-size: 10px; text-align: center; cursor: pointer; transition: 0.2s;
+        }
+        .acc-btn:hover { background: #442266; color: white; }
+        .acc-btn.selected { background: #8800ff; color: white; border-color: white; box-shadow: 0 0 10px #8800ff; }
+
+        /* Chat & Bottom */
+        .hud-bottom {
+            padding: 15px; pointer-events: auto; background: linear-gradient(to top, #000 0%, transparent 100%);
+            display: flex; gap: 10px; align-items: center;
+        }
+        #chat-input {
+            flex: 1; background: rgba(255,255,255,0.1); border: 1px solid #444; border-radius: 30px; padding: 12px 20px;
+            color: white; font-weight: bold; outline: none; backdrop-filter: blur(5px);
+        }
+        #chat-input:focus { background: rgba(0,0,0,0.8); border-color: #00ffff; }
+        #btn-send { background: #00ffff; color: #000; border: none; padding: 12px; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-weight: bold; box-shadow: 0 0 10px #00ffff; }
+        
+        /* Toast */
+        #toast {
+            position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); border: 1px solid #00ffff; color: #00ffff;
+            padding: 12px 30px; border-radius: 50px; font-weight: 900; font-size: 12px;
+            display: none; animation: slideDown 0.3s; z-index: 50; text-align: center;
+        }
+        @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        /* Drunk Overlay */
+        #drunk-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+            background: radial-gradient(circle, transparent 50%, rgba(100,0,255,0.2) 100%);
+            opacity: 0; transition: opacity 1s; mix-blend-mode: color-dodge; z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="drunk-overlay"></div>
+
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div>
+                <div class="logo">🍑 RABO MOTEL <span style="font-size:8px; color:#fff;">V6</span></div>
+                <div style="font-size:9px; color:#88aaff; margin-top:2px;">CYBER LOUNGE</div>
+            </div>
+            <button id="btn-custom" class="btn-style"><i class="fas fa-gem"></i> LOOK</button>
+        </div>
+
+        <div id="toast"></div>
+        
+        <!-- Context Actions (Botoes de Beber/Dançar) -->
+        <div class="ctx-container" id="ctx-ui"></div>
+
+        <!-- Menu de Interação (Clicar em player) -->
+        <div id="interact-menu">
+            <div class="int-btn" onclick="triggerInteract('kiss')">💋 BEIJAR</div>
+            <div class="int-btn" onclick="triggerInteract('sarrar')">🔥 SARRAR</div>
+            <div class="int-btn" onclick="triggerInteract('slap')">👋 TAPA</div>
+            <div class="int-btn" style="border-top:1px solid #444; margin-top:5px; background:transparent;" onclick="closeMenu()">FECHAR</div>
+        </div>
+
+        <div class="hud-bottom">
+            <input type="text" id="chat-input" placeholder="Conversar..." maxlength="50" autocomplete="off">
+            <button id="btn-send"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- PAINEL -->
+    <div id="custom-panel">
+        <div class="section-header">PELE</div>
+        <div class="skin-grid" id="skin-grid"></div>
+        
+        <div class="section-header">ROUPAS & EXTRAS</div>
+        <div class="acc-grid" id="acc-grid"></div>
+
+        <button id="btn-save" class="w-full mt-6 bg-purple-600 text-white font-bold p-3 rounded-xl hover:bg-purple-500 shadow-lg transition">PRONTO</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyChPRJcA-qNZBVM6ooEcjUbB79XRW1XNAM",
+            authDomain: "onyxchat-8ad6f.firebaseapp.com",
+            projectId: "onyxchat-8ad6f",
+            storageBucket: "onyxchat-8ad6f.firebasestorage.app",
+            messagingSenderId: "896434555696",
+            appId: "1:896434555696:web:dcc626cc34eef3a0d816f5",
+            measurementId: "G-GR1SJMYQZ2"
+        };
+        const APP_ID = "rabo-motel-v6-perfect"; 
+        const PLAYERS_COLLECTION = "players_v6";
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- CONSTANTES ---
+        const TILE_W = 64;
+        const TILE_H = 32;
+        const MAP_SIZE = 16; 
+
+        // Tiles
+        const T = { FLOOR: 0, WALL: 1, DANCE: 2, BAR: 3, VIP: 4, DJ: 5, POOL: 6 };
+
+        // CORES (CYBER LOUNGE - Azul/Roxo/Cyan)
+        const C = {
+            floor: '#1a1a2e', floorAlt: '#232342', // Dark Blue
+            wallTop: '#333366', wallSide: '#111133',
+            danceA: '#8800ff', danceB: '#440088',
+            barTop: '#111122', barSide: '#050510',
+            vip: '#550022',
+            pool: 'rgba(0, 255, 255, 0.6)',
+            highlight: 'rgba(0, 255, 255, 0.3)'
+        };
+
+        // GLOBAL STATE
+        let myUserId = null;
+        let myPlayerRef = null;
+        let players = {};
+        let particles = [];
+        let offset = { x: 0, y: 0 };
+        let hoveredTile = { x: -1, y: -1 };
+        let selectedTargetId = null;
+        let discoTick = 0;
+        let drunkLevel = 0;
+        let isDancingLocal = false;
+
+        // --- MAP GENERATION ---
+        const map = new Array(MAP_SIZE).fill(0).map(() => new Array(MAP_SIZE).fill(0));
+        function initMap() {
+            for(let y=0; y<MAP_SIZE; y++) for(let x=0; x<MAP_SIZE; x++) {
+                if (x===0 || y===0) { map[y][x] = T.WALL; continue; }
+                if (y===2 && x>=2 && x<=6) { map[y][x] = T.BAR; continue; } // Bar
+                if (y===2 && x>=10 && x<=13) { map[y][x] = T.DJ; continue; } // DJ
+                if (x>=6 && x<=10 && y>=6 && y<=10) { map[y][x] = T.DANCE; continue; } // Pista
+                if (x>=12 && y>=12) { map[y][x] = T.VIP; continue; } // VIP
+                if (x<=4 && y>=10) { map[y][x] = T.POOL; continue; } // Jacuzzi
+            }
+        }
+        initMap();
+
+        // --- MATH ---
+        function gridToScreen(gx, gy) {
+            return {
+                x: (gx - gy) * (TILE_W / 2) + offset.x,
+                y: (gx + gy) * (TILE_H / 2) + offset.y
+            };
+        }
+        function screenToGrid(sx, sy) {
+            const adjX = sx - offset.x;
+            const adjY = sy - offset.y;
+            return {
+                x: Math.floor((adjY / (TILE_H/2) + adjX / (TILE_W/2)) / 2),
+                y: Math.floor((adjY / (TILE_H/2) - adjX / (TILE_W/2)) / 2)
+            };
+        }
+
+        // --- PLAYER ---
+        class Player {
+            constructor(id, data) {
+                this.id = id;
+                this.sync(data);
+                const s = gridToScreen(this.gridX, this.gridY);
+                this.x = s.x; this.y = s.y;
+                this.tx = s.x; this.ty = s.y;
+                this.danceOffset = 0;
+            }
+
+            sync(data) {
+                if(this.id !== myUserId) {
+                    this.gridX = data.x; this.gridY = data.y;
+                    const s = gridToScreen(this.gridX, this.gridY);
+                    this.tx = s.x; this.ty = s.y;
+                    this.dancing = data.dancing || false;
+                    this.drunk = data.drunk || false;
+                    this.drink = data.drink || false;
+                } else {
+                    if(this.gridX === undefined) { this.gridX=data.x||8; this.gridY=data.y||8; }
+                }
+
+                this.skin = data.skin || '#fcbcb8';
+                this.acc = data.acc || 'none';
+                
+                if (data.chatId && data.chatId !== this.lcid) {
+                    this.msg = data.msg; this.lcid = data.chatId; this.mt = 300;
+                }
+
+                if (data.lastInt && data.lastInt > (this.lastIntTime || 0)) {
+                    this.lastIntTime = data.lastInt;
+                    this.playInteraction(data.intType);
+                }
+            }
+
+            playInteraction(type) {
+                let emoji = type==='kiss'?'💋':(type==='sarrar'?'🔥':'👋');
+                for(let i=0; i<5; i++) particles.push({ x:this.x, y:this.y-40, vx:(Math.random()-0.5)*2, vy:-Math.random()*2-1, char:emoji, life:60, c:'#fff' });
+                if(type === 'sarrar') this.shake = 30;
+            }
+
+            update() {
+                const d = Math.hypot(this.tx - this.x, this.ty - this.y);
+                if (d > 1) {
+                    this.x += (this.tx - this.x) * 0.15;
+                    this.y += (this.ty - this.y) * 0.15;
+                    // Se andar, para de dançar
+                    if (this.id === myUserId && isDancingLocal && d > 5) {
+                        isDancingLocal = false; sendState(); checkContext();
+                    }
+                }
+                
+                if (this.mt > 0) this.mt--;
+                if (this.shake > 0) this.shake--;
+
+                // Animação de Dança
+                if (this.dancing || (this.id === myUserId && isDancingLocal)) {
+                    this.danceOffset = Math.abs(Math.sin(Date.now()/100)) * 10;
+                } else {
+                    this.danceOffset = Math.sin(Date.now()/300) * 2;
+                }
+            }
+
+            draw(ctx) {
+                let dx = this.x;
+                let dy = this.y - TILE_H - this.danceOffset;
+
+                // Drunk/Shake effect
+                if (this.drunk || this.shake > 0) {
+                    dx += (Math.random()-0.5)*4;
+                    dy += (Math.random()-0.5)*4;
+                }
+
+                // Sombra
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.beginPath(); ctx.ellipse(this.x, this.y - 10, 14, 7, 0, 0, Math.PI*2); ctx.fill();
+
+                // Boneco
+                this.drawBody(ctx, dx, dy);
+                this.drawAcc(ctx, dx, dy);
+
+                // Drink
+                if(this.drink) {
+                    const hx = dx+18; const hy = dy;
+                    ctx.fillStyle='#fff'; ctx.fillRect(hx, hy, 6, 10);
+                    ctx.fillStyle=this.drink==='beer'?'#fc0':'#0ff'; ctx.fillRect(hx+1, hy+1, 4, 8);
+                }
+
+                // Chat
+                if (this.msg && this.mt > 0) drawBubble(ctx, dx, dy - 40, this.msg);
+            }
+
+            drawBody(ctx, x, y) {
+                let fill = this.skin.startsWith('#') ? this.skin : '#fcbcb8';
+                if(this.skin === 'alien') fill = '#0f0';
+                if(this.skin === 'gold') fill = '#fc0';
+                if(this.skin === 'latex') fill = '#111';
+
+                ctx.fillStyle = fill;
+                ctx.strokeStyle = this.id === myUserId ? '#0ff' : 'rgba(0,0,0,0.5)';
+                ctx.lineWidth = this.id === myUserId ? 2 : 1;
+
+                // Cheeks
+                ctx.beginPath(); ctx.arc(x-9, y, 15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(x+9, y, 15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                
+                // Latex Shine
+                if(this.skin==='latex') {
+                    ctx.fillStyle='rgba(255,255,255,0.6)';
+                    ctx.beginPath(); ctx.arc(x-12, y-6, 3, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(x+6, y-6, 3, 0, Math.PI*2); ctx.fill();
+                }
+            }
+
+            drawAcc(ctx, x, y) {
+                const acc = this.acc;
+                
+                // Tanga (Ajustada)
+                if (acc === 'tanga') {
+                    ctx.fillStyle = '#ff00ff'; // Neon Pink
+                    ctx.beginPath(); ctx.moveTo(x-20, y); ctx.lineTo(x, y+24); ctx.lineTo(x+20, y); 
+                    ctx.quadraticCurveTo(x, y+10, x-20, y); ctx.fill();
+                }
+                // Fio Dental (Ajustado)
+                if (acc === 'fio') {
+                    ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2; // Neon Green
+                    ctx.beginPath(); ctx.moveTo(x-22, y-5); ctx.lineTo(x, y+20); ctx.lineTo(x+22, y-5); ctx.stroke();
+                }
+                // Coleira/Harness
+                if (acc === 'harness') {
+                    ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(x-10, y-15); ctx.lineTo(x+10, y-15); ctx.stroke(); // Pescoço
+                    ctx.beginPath(); ctx.moveTo(x, y-15); ctx.lineTo(x, y+20); ctx.stroke(); // Centro
+                }
+                // Asas Neon
+                if (acc === 'wings') {
+                    ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2; ctx.globalAlpha = 0.6;
+                    ctx.beginPath(); ctx.moveTo(x, y-10); ctx.quadraticCurveTo(x-40, y-40, x-25, y+10); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(x, y-10); ctx.quadraticCurveTo(x+40, y-40, x+25, y+10); ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+            }
+        }
+
+        // --- RENDER LOOP ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            offset.x = canvas.width / 2;
+            offset.y = (canvas.height / 2) - (MAP_SIZE*TILE_H)/3;
+        }
+        window.onresize = resize; resize();
+
+        function drawPrism(x, y, w, h, z, cTop, cSide) {
+            ctx.fillStyle = cTop;
+            ctx.beginPath(); ctx.moveTo(x, y-z); 
+            ctx.lineTo(x+w/2, y-z+h/2); ctx.lineTo(x, y-z+h); ctx.lineTo(x-w/2, y-z+h/2); ctx.fill();
+            
+            ctx.fillStyle = cSide;
+            ctx.beginPath(); ctx.moveTo(x+w/2, y-z+h/2); ctx.lineTo(x+w/2, y+h/2); 
+            ctx.lineTo(x, y+h); ctx.lineTo(x, y-z+h); ctx.fill();
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.beginPath(); ctx.moveTo(x-w/2, y-z+h/2); ctx.lineTo(x-w/2, y+h/2); 
+            ctx.lineTo(x, y+h); ctx.lineTo(x, y-z+h); ctx.fill();
+        }
+
+        function draw() {
+            discoTick++;
+            ctx.fillStyle = '#0f0f1a'; ctx.fillRect(0,0,canvas.width, canvas.height);
+
+            // Luzes
+            const cx = canvas.width/2; const cy = canvas.height/2;
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 500);
+            grad.addColorStop(0, `hsla(${(discoTick)%360}, 60%, 50%, 0.1)`);
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+            // MAPA
+            for(let y=0; y<MAP_SIZE; y++) for(let x=0; x<MAP_SIZE; x++) {
+                const t = map[y][x];
+                const p = gridToScreen(x, y);
+
+                if (t === T.WALL) {
+                    drawPrism(p.x, p.y, TILE_W, TILE_H, 60, C.wallTop, C.wallSide);
+                    continue;
+                }
+
+                // Chão
+                let c = (x+y)%2===0 ? C.floor : C.floorAlt;
+                if (t===T.DANCE) c = (x+y+Math.floor(discoTick/10))%2===0 ? C.danceA : C.danceB;
+                if (t===T.VIP) c = C.vip;
+                if (x===hoveredTile.x && y===hoveredTile.y) c = C.highlight;
+
+                ctx.beginPath(); ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x+TILE_W/2, p.y+TILE_H/2); ctx.lineTo(p.x, p.y+TILE_H); ctx.lineTo(p.x-TILE_W/2, p.y+TILE_H/2);
+                ctx.fillStyle = c; ctx.fill(); 
+                ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.stroke();
+
+                if(t===T.BAR) drawPrism(p.x, p.y, TILE_W, TILE_H, 25, C.barTop, C.barSide);
+                if(t===T.DJ) drawPrism(p.x, p.y, TILE_W, TILE_H, 30, '#222', '#000');
+            }
+
+            // PLAYERS
+            const sorted = Object.values(players).sort((a,b) => a.y - b.y);
+            sorted.forEach(p => { p.update(); p.draw(ctx); });
+
+            // PARTICLES
+            for(let i=particles.length-1; i>=0; i--) {
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life--;
+                ctx.fillStyle = p.c; ctx.font = "16px Arial"; ctx.fillText(p.char, p.x, p.y);
+                if(p.life<=0) particles.splice(i,1);
+            }
+
+            // Drunk Effect
+            if (drunkLevel > 0) {
+                offset.x += (Math.random()-0.5)*(drunkLevel*0.1);
+                offset.y += (Math.random()-0.5)*(drunkLevel*0.1);
+                drunkLevel -= 0.05;
+                document.getElementById('drunk-overlay').style.opacity = drunkLevel / 100;
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // --- INTERACTION & CONTEXT ---
+        function checkContext() {
+            const me = players[myUserId];
+            if(!me) return;
+            const t = map[me.gridY][me.gridX];
+            const div = document.getElementById('ctx-ui');
+            div.innerHTML = '';
+
+            // Botão de Beber
+            if (me.drink) {
+                div.appendChild(mkBtn('VIRAR', 'glass-martini-alt', 'drink', consumeDrink));
+            } else if (t === T.BAR) {
+                div.appendChild(mkBtn('DRINK', 'cocktail', 'drink', () => getDrink('martini')));
+                div.appendChild(mkBtn('CERVEJA', 'beer', 'drink', () => getDrink('beer')));
+            }
+
+            // Botão de Dançar
+            if (t === T.DANCE) {
+                const label = isDancingLocal ? 'PARAR' : 'DANÇAR';
+                div.appendChild(mkBtn(label, 'music', 'dance', toggleDance));
+            }
+        }
+
+        function mkBtn(txt, ico, cls, fn) {
+            const b = document.createElement('div'); b.className = `ctx-btn ${cls}`;
+            b.innerHTML = `<i class="fas fa-${ico}"></i> ${txt}`; b.onclick = fn; return b;
+        }
+
+        window.triggerInteract = async (type) => {
+            document.getElementById('interact-menu').style.display = 'none';
+            if (!selectedTargetId || !myPlayerRef) return;
+            await updateDoc(myPlayerRef, { intType: type, target: selectedTargetId, lastInt: Date.now() });
+            players[myUserId].playInteraction(type);
+            showToast(`Mandou ${type}!`); selectedTargetId = null;
+        };
+
+        window.closeMenu = () => document.getElementById('interact-menu').style.display = 'none';
+
+        async function getDrink(type) {
+            players[myUserId].drink = type;
+            showToast(`Pegou ${type}!`);
+            sendState(); checkContext();
+        }
+        async function consumeDrink() {
+            players[myUserId].drink = false;
+            drunkLevel += 30;
+            showToast(drunkLevel>80?"🥴 VAI DAR PT!":"😋 Bateu!");
+            if(drunkLevel>80) spawnVomit(players[myUserId].x, players[myUserId].y);
+            sendState(); checkContext();
+        }
+        async function toggleDance() {
+            isDancingLocal = !isDancingLocal;
+            sendState(); checkContext();
+        }
+        function spawnVomit(x, y) {
+            for(let i=0; i<15; i++) particles.push({ x:x, y:y-20, vx:(Math.random()-0.5)*4, vy:Math.random()*4, c:'#0f0', char:'.', life:40 });
+        }
+
+        function handleInput(cx, cy) {
+            if(document.activeElement.tagName==='INPUT') return;
+            const r = canvas.getBoundingClientRect();
+            const g = screenToGrid(cx-r.left, cy-r.top);
+
+            if (g.x>=0 && g.x<MAP_SIZE && g.y>=0 && g.y<MAP_SIZE) {
+                if (map[g.y][g.x] === T.WALL) return;
+
+                // Check click on player
+                let clickedPlayer = null;
+                Object.values(players).forEach(p => {
+                    if (p.id !== myUserId && p.gridX === g.x && p.gridY === g.y) clickedPlayer = p;
+                });
+
+                if (clickedPlayer) {
+                    selectedTargetId = clickedPlayer.id;
+                    const menu = document.getElementById('interact-menu');
+                    menu.style.display = 'flex'; menu.style.left = cx+'px'; menu.style.top = cy+'px';
+                } else {
+                    document.getElementById('interact-menu').style.display = 'none';
+                    players[myUserId].gridX = g.x; players[myUserId].gridY = g.y;
+                    const s = gridToScreen(g.x, g.y);
+                    
+                    // Drunk Walk
+                    if (drunkLevel > 30) {
+                        players[myUserId].tx = s.x + (Math.random()-0.5)*40;
+                        players[myUserId].ty = s.y + (Math.random()-0.5)*40;
+                    } else {
+                        players[myUserId].tx = s.x; players[myUserId].ty = s.y;
+                    }
+
+                    // Auto-stop dance
+                    const t = map[g.y][g.x];
+                    if (t !== T.DANCE && isDancingLocal) { isDancingLocal = false; }
+                    
+                    sendState(); checkContext();
+                }
+            }
+        }
+        
+        canvas.addEventListener('mousedown', e => handleInput(e.clientX, e.clientY));
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); handleInput(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+        canvas.addEventListener('mousemove', e => {
+            const r = canvas.getBoundingClientRect();
+            hoveredTile = screenToGrid(e.clientX-r.left, e.clientY-r.top);
+            canvas.style.cursor = map[hoveredTile.y]?.[hoveredTile.x] ? 'pointer' : 'default';
+        });
+
+        // --- NETWORKING ---
+        let lastUpd = 0;
+        async function sendState() {
+            if(!myPlayerRef) return;
+            const now = Date.now();
+            if(now-lastUpd < 100) return;
+            lastUpd = now;
+            const me = players[myUserId];
+            await updateDoc(myPlayerRef, {
+                x: me.gridX, y: me.gridY, dancing: isDancingLocal,
+                drink: me.drink || false, drunk: drunkLevel > 20, lastActive: now
+            });
+        }
+        
+        const chatIn = document.getElementById('chat-input');
+        const doChat = async () => { if(chatIn.value.trim() && myPlayerRef) { await updateDoc(myPlayerRef, { msg: chatIn.value, chatId: crypto.randomUUID(), lastActive: Date.now() }); chatIn.value=''; } };
+        document.getElementById('btn-send').onclick = doChat; chatIn.onkeydown = e => { if(e.key==='Enter') doChat(); };
+
+        // --- AUTH ---
+        onAuthStateChanged(auth, async (u) => {
+            if(u) {
+                myUserId = u.uid;
+                myPlayerRef = doc(db, 'artifacts', APP_ID, 'public', 'data', PLAYERS_COLLECTION, myUserId);
+                await setDoc(myPlayerRef, { x: 8, y: 8, skin: '#fcbcb8', acc: 'none', lastActive: Date.now() }, {merge:true});
+                setInterval(() => { if(myPlayerRef) updateDoc(myPlayerRef, { lastActive: Date.now() }).catch(()=>{}); }, 5000);
+                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', PLAYERS_COLLECTION), (snap) => {
+                    const now = Date.now(); const ids = [];
+                    snap.forEach(d => {
+                        const dt = d.data();
+                        if(now - (dt.lastActive||0) > 120000) return;
+                        ids.push(d.id);
+                        if(!players[d.id]) players[d.id] = new Player(d.id, dt);
+                        else players[d.id].sync(dt);
+                    });
+                    Object.keys(players).forEach(k => { if(!ids.includes(k)) delete players[k]; });
+                });
+            } else signInAnonymously(auth);
+        });
+
+        // UI HELPERS
+        function drawBubble(ctx, x, y, text) {
+            ctx.font = "bold 10px Roboto"; const w = ctx.measureText(text).width + 16;
+            ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.roundRect(x-w/2, y-20, w, 22, 6); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x-4, y-5); ctx.lineTo(x+4, y-5); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.fillText(text, x, y-6);
+        }
+        function showToast(m){const t=document.getElementById('toast');t.innerText=m;t.style.display='block';setTimeout(()=>t.style.display='none',3000);}
+        const pnl = document.getElementById('custom-panel');
+        document.getElementById('btn-custom').onclick = () => pnl.classList.toggle('open');
+
+        const tmp = {s:'#fcbcb8', a:'none'};
+        ['#fcbcb8', '#a56e50', '#3d231a', 'latex', 'alien', 'gold'].forEach(c => {
+            const b=document.createElement('div'); b.className='skin-opt';
+            b.style.background = c==='latex'?'#000':(c==='alien'?'#0f0':c);
+            b.onclick=()=>{ tmp.s=c; document.querySelectorAll('.skin-opt').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); };
+            document.getElementById('skin-grid').appendChild(b);
+        });
+        ['none', 'tanga', 'fio', 'cinta', 'wings'].forEach(a => {
+            const b=document.createElement('div'); b.className='acc-btn'; b.innerText=a.toUpperCase();
+            b.onclick=()=>{ tmp.a=a; document.querySelectorAll('.acc-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); };
+            document.getElementById('acc-grid').appendChild(b);
+        });
+        document.getElementById('btn-save').onclick = async () => {
+            if(myPlayerRef) await updateDoc(myPlayerRef, { skin: tmp.s, acc: tmp.a });
+            pnl.classList.remove('open'); showToast('Look Salvo! 🔥');
+        };
+
+        draw();
+    </script>
+</body>
+</html>
+
