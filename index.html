@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rabo Hotel - v15.1 Emergency Fix</title>
+    <title>Rabo Hotel - v16 Multiplayer Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -15,6 +15,19 @@
             font-family: 'Roboto', sans-serif; touch-action: none; user-select: none;
         }
         canvas { display: block; image-rendering: pixelated; }
+
+        /* LOADING SCREEN */
+        #loading-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #050510; z-index: 9999; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: #ff0055;
+            font-family: 'Press Start 2P', cursive; text-align: center;
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #330011; border-top: 4px solid #ff0055;
+            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* UI LAYER */
         #ui-layer {
@@ -169,13 +182,18 @@
     </style>
 </head>
 <body>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div>Conectando ao Rabo Hotel...</div>
+    </div>
+
     <div id="youtube-player"></div>
 
     <div id="ui-layer">
         <div class="hud-top">
             <div>
-                <div class="logo">🏩 RABO MOTEL <span style="font-size:8px; color:#fff;">V15.1</span></div>
-                <div style="font-size:9px; color:#ff88aa; margin-top:2px;">STABLE FIX</div>
+                <div class="logo">🏩 RABO MOTEL <span style="font-size:8px; color:#fff;">V16</span></div>
+                <div style="font-size:9px; color:#ff88aa; margin-top:2px;">MULTIPLAYER FIX</div>
             </div>
             <div style="display:flex; gap:10px;">
                 <button id="btn-audio-init" class="btn-style btn-music"><i class="fas fa-volume-up"></i> SOM</button>
@@ -256,25 +274,17 @@
     <!-- LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyChPRJcA-qNZBVM6ooEcjUbB79XRW1XNAM",
-            authDomain: "onyxchat-8ad6f.firebaseapp.com",
-            projectId: "onyxchat-8ad6f",
-            storageBucket: "onyxchat-8ad6f.firebasestorage.app",
-            messagingSenderId: "896434555696",
-            appId: "1:896434555696:web:dcc626cc34eef3a0d816f5",
-            measurementId: "G-GR1SJMYQZ2"
-        };
-        const APP_ID = "rabo-hotel-v15-invite"; 
-        const PLAYERS_COLLECTION = "players_v15_1"; // New collection to force fresh data
-        const WORLD_COLLECTION = "world_v15_1";
-        
+        // CONFIG
+        const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'rabo-hotel-v16'; // Fallback ID if env missing
+        const PLAYERS_COLLECTION = "players_v16";
+        const WORLD_COLLECTION = "world_v16";
 
         const TILE_W = 64;
         const TILE_H = 32;
@@ -298,6 +308,7 @@
             highlight: 'rgba(255, 0, 100, 0.3)'
         };
 
+        // STATE
         let myUserId = null;
         let myPlayerRef = null;
         let players = {};
@@ -311,34 +322,102 @@
         let ytPlayer = null;
         let currentDJId = null;
         let audioEnabled = false;
+        let gameReady = false; // Prevents render crash
         
-        // ROOM STATE
         let currentRoom = 'lobby'; 
         let motelMode = false;
         let lastInviteFrom = null;
 
         let soccerBall = { x: 16, y: 16, vx: 0, vy: 0, lastSync: 0 };
-        let ballRef = doc(db, 'artifacts', APP_ID, 'public', 'data', WORLD_COLLECTION, 'ball');
+        let ballRef = null;
+
+        // AUTH & INIT
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth failed:", error);
+                document.getElementById('loading-screen').innerHTML = "<div style='color:red'>Erro de Conexão. Recarregue.</div>";
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, async (u) => {
+            if(u) {
+                myUserId = u.uid;
+                // STRICT PATH RULE
+                myPlayerRef = doc(db, 'artifacts', appId, 'public', 'data', PLAYERS_COLLECTION, myUserId);
+                ballRef = doc(db, 'artifacts', appId, 'public', 'data', WORLD_COLLECTION, 'ball');
+
+                // Force initial player state to avoid "limbo"
+                await setDoc(myPlayerRef, { 
+                    x: 8, y: 8, 
+                    visualX: 8, visualY: 8, // Crucial for camera
+                    room: 'lobby', 
+                    lastActive: Date.now(),
+                    nick: 'Visitante'
+                }, {merge:true});
+
+                // Heartbeat
+                setInterval(() => { 
+                    if(myPlayerRef) updateDoc(myPlayerRef, { lastActive: Date.now() }).catch(()=>{}); 
+                }, 5000);
+                
+                // Players Listener with Error Handling
+                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', PLAYERS_COLLECTION), (snap) => {
+                    const now = Date.now();
+                    const foundIds = [];
+                    snap.forEach(d => {
+                        const dt = d.data();
+                        if(now - (dt.lastActive||0) > 120000) return; // 2 min timeout
+                        foundIds.push(d.id);
+                        
+                        if(!players[d.id]) { 
+                            players[d.id] = new Player(d.id, dt); 
+                        } else { 
+                            players[d.id].sync(dt); 
+                        }
+                    });
+                    
+                    // Cleanup
+                    Object.keys(players).forEach(k => { if(!foundIds.includes(k)) delete players[k]; });
+
+                    // Only remove loading screen if I am in the list
+                    if (players[myUserId]) {
+                        gameReady = true;
+                        document.getElementById('loading-screen').style.display = 'none';
+                    }
+                }, (error) => {
+                    console.error("Snapshot Error:", error);
+                });
+
+                // Ball Sync
+                onSnapshot(ballRef, (snap) => {
+                    if(snap.exists()) {
+                        const d = snap.data();
+                        if (Date.now() - (d.t || 0) < 200) { // Only sync if fresh kick
+                             soccerBall.x = d.x; soccerBall.y = d.y; soccerBall.vx = d.vx || 0; soccerBall.vy = d.vy || 0;
+                        }
+                    } else setDoc(ballRef, { x: 16, y: 16 });
+                });
+            }
+        });
 
         // --- MAP GENERATION ---
         const map = new Array(MAP_SIZE).fill(0).map(() => new Array(MAP_SIZE).fill(0));
         
         function initMap() {
-            // SAFE GUARD: Clear Map
             for(let y=0; y<MAP_SIZE; y++) for(let x=0; x<MAP_SIZE; x++) map[y][x] = T.FLOOR_LOBBY; 
-
-            if (currentRoom === 'lobby') {
-                generateLobbyMap();
-            } else {
-                generateSuiteMap();
-            }
+            if (currentRoom === 'lobby') generateLobbyMap(); else generateSuiteMap();
         }
 
         function generateLobbyMap() {
             for(let y=0; y<MAP_SIZE; y++) for(let x=0; x<MAP_SIZE; x++) {
                 if (x===0 || y===0 || x===MAP_SIZE-1 || y===MAP_SIZE-1) { map[y][x] = T.WALL; continue; }
-
-                // Zones
                 if (x < 16 && y >= 14) { // Bar
                     map[y][x] = T.FLOOR_WOOD;
                     if(x===15 && y < 22) map[y][x] = T.WALL;
@@ -380,7 +459,6 @@
                 if (x===23 && y===9) map[y][x] = T.PLANT;
             }
         }
-
         initMap();
 
         function gridToScreen(gx, gy) {
@@ -398,21 +476,17 @@
             };
         }
 
-        // --- ROOM & INVITE LOGIC ---
+        // --- ROOM LOGIC ---
         window.switchRoom = async (roomId) => {
             currentRoom = roomId;
             initMap();
-            
             const me = players[myUserId];
             if (me) {
-                // Reset pos based on room
                 if (roomId === 'lobby') { me.gridX = 8; me.gridY = 8; }
                 else { me.gridX = 16; me.gridY = 20; }
                 me.visualX = me.gridX; me.visualY = me.gridY;
-                
-                await updateDoc(myPlayerRef, { room: roomId, x: me.gridX, y: me.gridY });
+                if(myPlayerRef) await updateDoc(myPlayerRef, { room: roomId, x: me.gridX, y: me.gridY });
             }
-
             document.getElementById('room-indicator').style.display = currentRoom==='lobby'?'none':'block';
             document.getElementById('room-indicator').innerText = currentRoom==='lobby'?'':(currentRoom===`suite_${myUserId}`?'MINHA SUÍTE':'SUÍTE PRIVADA');
             showToast(currentRoom === 'lobby' ? "Lobby Principal" : "🔥 Suíte Privada 🔥");
@@ -421,35 +495,17 @@
         window.sendInvite = async () => {
             document.getElementById('interact-menu').style.display = 'none';
             if(!selectedTargetId) return;
-            
-            // Write to TARGET's document that they have an invite FROM me
-            const targetRef = doc(db, 'artifacts', APP_ID, 'public', 'data', PLAYERS_COLLECTION, selectedTargetId);
-            // We use a special field "inviteFrom" on the target
-            await updateDoc(targetRef, { 
-                inviteFrom: myUserId, 
-                inviteTime: Date.now() 
-            }).catch(e => console.log("Invite failed", e));
-            
+            const targetRef = doc(db, 'artifacts', appId, 'public', 'data', PLAYERS_COLLECTION, selectedTargetId);
+            await updateDoc(targetRef, { inviteFrom: myUserId, inviteTime: Date.now() }).catch(e => console.log(e));
             showToast("Convite enviado! 💌");
-            
-            // I go to my suite immediately to wait
-            if(currentRoom !== `suite_${myUserId}`) {
-                switchRoom(`suite_${myUserId}`);
-            }
+            if(currentRoom !== `suite_${myUserId}`) switchRoom(`suite_${myUserId}`);
         };
 
-        // UI Listeners for Modal
         document.getElementById('btn-accept-invite').onclick = async () => {
             document.getElementById('invite-modal').style.display = 'none';
-            if(lastInviteFrom) {
-                switchRoom(`suite_${lastInviteFrom}`);
-                showToast("Entrando na Suíte...");
-            }
+            if(lastInviteFrom) { switchRoom(`suite_${lastInviteFrom}`); showToast("Entrando..."); }
         };
-        document.getElementById('btn-deny-invite').onclick = () => {
-            document.getElementById('invite-modal').style.display = 'none';
-            showToast("Recusou.");
-        };
+        document.getElementById('btn-deny-invite').onclick = () => document.getElementById('invite-modal').style.display = 'none';
 
         // --- YOUTUBE ---
         const tag = document.createElement('script');
@@ -464,7 +520,7 @@
         class Player {
             constructor(id, data) {
                 this.id = id;
-                this.gridX = data.x || 4; this.gridY = data.y || 4;
+                this.gridX = data.x || 8; this.gridY = data.y || 8;
                 this.visualX = this.gridX; this.visualY = this.gridY;
                 this.inPool = false; 
                 this.room = data.room || 'lobby';
@@ -481,10 +537,8 @@
                 this.room = data.room || 'lobby';
                 this.isAdmin = (this.nick.toUpperCase().includes('ADMIN') || this.nick.toUpperCase().includes('MOD'));
                 
-                // Invite Logic (Only for me)
                 if(this.id === myUserId && data.inviteFrom && data.inviteTime > (this.lastInviteCheck || 0)) {
                     this.lastInviteCheck = Date.now();
-                    // Don't show if older than 10s
                     if (Date.now() - data.inviteTime < 10000) {
                         lastInviteFrom = data.inviteFrom;
                         const inviterName = players[lastInviteFrom]?.nick || "Alguém";
@@ -516,7 +570,6 @@
                 let emoji = type==='kiss'?'💋':(type==='sarrar'?'🔥':(type==='slap'?'👋':'💪'));
                 if(type === 'obaoba') emoji = '💕';
                 for(let i=0; i<8; i++) particles.push({ x:s.x, y:s.y-40, vx:(Math.random()-0.5)*3, vy:-Math.random()*3-1, char:emoji, life:60, c:'#fff' });
-                
                 if(type === 'obaoba') {
                     const shakeInt = setInterval(()=>{ offset.x+=(Math.random()-0.5)*10; offset.y+=(Math.random()-0.5)*10; }, 16);
                     setTimeout(()=>clearInterval(shakeInt), 500);
@@ -529,6 +582,11 @@
             }
             update() {
                 if(this.room !== currentRoom) return;
+                
+                // Safety catch for visual drift
+                if (isNaN(this.visualX) || isNaN(this.visualY)) {
+                    this.visualX = this.gridX; this.visualY = this.gridY;
+                }
 
                 const currentTile = map[Math.round(this.visualY)]?.[Math.round(this.visualX)];
                 const wasInPool = this.inPool;
@@ -544,7 +602,7 @@
                 if(carrier) {
                     this.gridX = carrier.gridX; this.gridY = carrier.gridY;
                     this.visualX = carrier.visualX; this.visualY = carrier.visualY;
-                    if(this.room !== carrier.room) this.room = carrier.room; // Sync room if carried
+                    if(this.room !== carrier.room) this.room = carrier.room; 
                     this.elevation = 15;
                 } else {
                     this.elevation = 0;
@@ -632,14 +690,12 @@
         }
 
         function draw() {
+            requestAnimationFrame(draw);
+            if (!gameReady) return; // Prevent render crash
+
             discoTick++;
             if(myUserId && players[myUserId]) {
                 const me = players[myUserId];
-                // SAFE GUARD: Valid pos?
-                if (me.visualX === undefined || me.visualY === undefined) {
-                    me.visualX = 8; me.visualY = 8;
-                }
-
                 const playerIsoX = (me.visualX - me.visualY) * (TILE_W/2);
                 const playerIsoY = (me.visualX + me.visualY) * (TILE_H/2);
                 offset.x += ((canvas.width/2 - playerIsoX) - offset.x) * 0.1;
@@ -676,8 +732,6 @@
             }
 
             if(motelMode && currentRoom !== 'lobby') { ctx.fillStyle = 'rgba(255, 0, 50, 0.15)'; ctx.fillRect(0,0,canvas.width,canvas.height); }
-
-            requestAnimationFrame(draw);
         }
 
         function drawTile(x, y) {
@@ -788,7 +842,7 @@
         }
 
         function handleInput(cx, cy) {
-            if(!myUserId) return; 
+            if(!gameReady || !myUserId) return; 
             if(document.activeElement.tagName==='INPUT') return;
             if(cx < 50 && cy > window.innerHeight - 50) return;
             const r = canvas.getBoundingClientRect();
@@ -824,49 +878,6 @@
             hoveredTile = screenToGrid(e.clientX-r.left, e.clientY-r.top);
             const t = map[hoveredTile.y]?.[hoveredTile.x];
             canvas.style.cursor = (t!==undefined) ? 'pointer' : 'default'; 
-        });
-
-        // --- NETWORKING ---
-        let lastUpd = 0;
-        async function sendState() {
-            if(!myPlayerRef) return;
-            const now = Date.now(); if(now-lastUpd < 50) return; lastUpd = now;
-            const me = players[myUserId];
-            await updateDoc(myPlayerRef, {
-                x: me.gridX, y: me.gridY, dancing: isDancingLocal,
-                drink: me.drink || false, drunk: drunkLevel > 20, 
-                sitting: me.sitting || false, lastActive: now, carrying: me.carrying || null,
-                diving: me.diving || false, room: currentRoom
-            });
-        }
-        
-        const chatIn = document.getElementById('chat-input');
-        const doChat = async () => { if(chatIn.value.trim() && myPlayerRef) { await updateDoc(myPlayerRef, { msg: chatIn.value, chatId: crypto.randomUUID(), lastActive: Date.now() }); chatIn.value=''; } };
-        document.getElementById('btn-send').onclick = doChat; chatIn.onkeydown = e => { if(e.key==='Enter') doChat(); };
-        document.getElementById('btn-emote').onclick = () => document.getElementById('emote-menu').classList.toggle('visible');
-        document.getElementById('btn-dj').onclick = () => document.getElementById('music-menu').style.display = 'flex';
-        document.getElementById('btn-audio-init').onclick = () => { audioEnabled = true; document.getElementById('btn-audio-init').style.display='none'; showToast('Áudio Ativado!'); };
-        document.getElementById('btn-custom').onclick = () => document.getElementById('custom-panel').classList.toggle('open');
-
-        // --- AUTH & SYNC ---
-        onAuthStateChanged(auth, async (u) => {
-            if(u) {
-                myUserId = u.uid;
-                myPlayerRef = doc(db, 'artifacts', APP_ID, 'public', 'data', PLAYERS_COLLECTION, myUserId);
-                await setDoc(myPlayerRef, { lastActive: Date.now(), room: 'lobby' }, {merge:true}); 
-                setInterval(() => { if(myPlayerRef) updateDoc(myPlayerRef, { lastActive: Date.now() }).catch(()=>{}); }, 5000);
-                
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', PLAYERS_COLLECTION), (snap) => {
-                    const now = Date.now(); const ids = [];
-                    snap.forEach(d => {
-                        const dt = d.data();
-                        if(now - (dt.lastActive||0) > 120000) return;
-                        ids.push(d.id);
-                        if(!players[d.id]) { players[d.id] = new Player(d.id, dt); } else { players[d.id].sync(dt); }
-                    });
-                    Object.keys(players).forEach(k => { if(!ids.includes(k)) delete players[k]; });
-                });
-            } else signInAnonymously(auth);
         });
 
         function showToast(m){const t=document.getElementById('toast');t.innerText=m;t.style.display='block';setTimeout(()=>t.style.display='none',3000);}
